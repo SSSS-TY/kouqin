@@ -16,14 +16,16 @@
 - [x] `docs/harness/PROGRESS.md`、`docs/harness/DECISIONS.md`、`docs/harness/ERRORS.md` 已创建
 - [x] `docs/harness/errors/`、`docs/harness/archive/` 目录已创建
 - [x] 开发流程已内联到本文件 §3（未单独创建 `docs/harness/DEVELOPMENT_FLOW.md`）
-- [x] §5.2 运行时与技术栈已确认（2026-09-25）：Python 3.13.12 + PySide6 6.11.1 + AutoHotkey v2.0.23
+- [x] §5.2 运行时与技术栈已确认（2026-09-25）：Python 3.13.12 + PySide6 6.11.1（**不再使用 AutoHotkey**，见 §1）
 - [x] §5.1 核心命令速查表已填入当前**确认可运行**的命令；未确认的命令一律标注 `[待确认]`
 - [x] 游戏内键位与鼠标修饰键语义已实测确认（2026-09-25）：左键 −12 半音、中键 +1、右键 +12（见 §1.3）
-- [ ] 曲谱主要来源格式（文本简谱 / MIDI / 图片识别）—— 待用户确认
+- [x] 曲谱来源已定（2026-09-25 用户确认「几种都支持」）：v1 做文本简谱 + JSON + **MIDI**（纯标准库解析）；图片/PDF 识别列为 M5
 - [x] 运行时技术路线已定：**纯 Python 单进程**（ADR-003 取代 ADR-001；P0-2 实测 Python SendInput 在游戏内生效）
 - [x] git 写操作分工：Agent **不执行** `git init/add/commit/push`，由用户在本地终端执行
       （在沙盒内 `git init` 会导致命令工具全面失效，见 `docs/harness/errors/ERR-001.md`）
-- [ ] 是否启用 AST / 知识图谱同步 —— 待确认（默认：未启用，本文件不含相关流程）
+- [x] 是否启用 AST / 知识图谱同步：**未启用**（本文件不含相关流程）
+- [x] **v1 已结项**（2026-09-25 用户回复 `ARCHIVE`）：自动化 164 项全绿 + 游戏内 MAN-01…MAN-10 全部通过；摘要见 `docs/harness/PROGRESS.md` 的 Archive 区
+- [ ] 后续优化（用户要求「等基本功能稳定再考虑」）：界面视觉与交互、练习模式、界面便携化、曲库分组等
 
 ---
 
@@ -256,8 +258,8 @@ Agent 执行任务时，按以下顺序解释约束：
 - `config/instrument.json`：乐器键位与鼠标修饰键语义（唯一权威来源）
 - `config/settings.json`：界面与播放偏好
 - `scores/`：曲谱库（用户数据）
-- `runtime/`：运行时生成的计划/控制/状态文件（自动生成，不手工编辑、不入库）
 - `tests/unit/`：领域逻辑与契约的单元测试
+- `tests/manual/`：游戏内验收清单与记录
 - `tools/`：一次性实验与排查脚本（P0 实验等），不属于产品代码
 - `docs/design/`：设计、规格、测试计划、实验清单
 
