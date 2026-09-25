@@ -51,4 +51,12 @@ def test_sustain_limit_stays_unmeasured_until_tested(config) -> None:
 
 def test_every_setting_is_explained(config) -> None:
     """防止有人改了参数却不更新依据说明。"""
-    assert set(config["playback"]) - set(config["notes"]) == set()
+    documented = set(config["playback"])
+    documented |= {f"midi.{key}" for key in config["midi"]}
+    assert documented - set(config["notes"]) == set()
+
+
+def test_midi_reference_maps_middle_c_to_base_note(config) -> None:
+    """SPEC §3.2：MIDI 60（中央 C）→ s = 0（z 键 = 中音 1）。"""
+    assert config["midi"]["reference_note"] == 60
+    assert config["midi"]["reference_semitone"] == 0

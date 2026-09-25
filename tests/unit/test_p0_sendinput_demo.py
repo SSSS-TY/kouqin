@@ -147,3 +147,23 @@ def test_dry_run_prints_plan_without_sending(capsys) -> None:
     assert exit_code == 0
     assert "dry-run：共 16 个事件，未发送任何输入" in out
     assert "key_down" in out and "z" in out
+
+
+def test_sustain_mode_plan_covers_all_default_durations(capsys) -> None:
+    """P0-7 用：默认依次按住 2/4/6/8/10/12 秒，共 6 段 12 个事件。"""
+    exit_code = main(["--dry-run", "--yes", "sustain"])
+    out = capsys.readouterr().out
+
+    assert exit_code == 0
+    assert "dry-run：共 12 个事件，未发送任何输入" in out
+    assert "第 6 段：12 秒" in out
+    assert "从第几段开始" in out
+
+
+def test_sustain_mode_accepts_custom_durations(capsys) -> None:
+    exit_code = main(["--dry-run", "--yes", "sustain", "--durations", "1000,3000"])
+    out = capsys.readouterr().out
+
+    assert exit_code == 0
+    assert "dry-run：共 4 个事件，未发送任何输入" in out
+    assert "第 2 段：3 秒" in out

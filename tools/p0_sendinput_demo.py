@@ -9,6 +9,7 @@
     python tools/p0_sendinput_demo.py scale                    # 依次弹 z x c v b n m ,
     python tools/p0_sendinput_demo.py key --key z --repeat 5   # 同一键连弹 5 次
     python tools/p0_sendinput_demo.py hold-sweep               # 不同按时长对比（测最短可按时长）
+    python tools/p0_sendinput_demo.py sustain                  # 长按时长对比（测长音衰减点，P0-7）
     python tools/p0_sendinput_demo.py compare --button right   # 标定「降调/半音/升调」是几半音
     python tools/p0_sendinput_demo.py mouse --button left      # 只测鼠标键注入是否生效
 
@@ -390,6 +391,15 @@ def build_parser() -> argparse.ArgumentParser:
     p_sweep.add_argument("--durations", default="20,30,40,50,80,120", help="按时长列表（毫秒，逗号分隔）")
     p_sweep.add_argument("--gap-ms", type=float, default=1500.0, help="两段之间的间隔毫秒（默认 1500）")
 
+    p_sustain = sub.add_parser("sustain", help="不同长按时长对比，测长音衰减点（P0-7）")
+    p_sustain.add_argument("--key", default="z", help="要弹的键（默认 z）")
+    p_sustain.add_argument(
+        "--durations",
+        default="2000,4000,6000,8000,10000,12000",
+        help="长按时长列表（毫秒，逗号分隔；默认 2/4/6/8/10/12 秒）",
+    )
+    p_sustain.add_argument("--gap-ms", type=float, default=2000.0, help="两段之间的间隔毫秒（默认 2000）")
+
     p_cmp = sub.add_parser("compare", help="标定：按住鼠标键时按 z，对比普通键，倒推半音数")
     p_cmp.add_argument("--button", required=True, choices=sorted(BUTTON_FLAGS), help="要标定的鼠标键")
     p_cmp.add_argument("--hold-ms", type=float, default=350.0, help="每个音按时长毫秒（默认 350）")
@@ -421,6 +431,8 @@ def _plan_for(args: argparse.Namespace) -> list[Event]:
         return plan_scale(INSTRUMENT_KEYS, args.hold_ms, args.interval_ms) * args.repeat
     if args.mode == "hold-sweep":
         return plan_hold_sweep(args.key, _parse_durations(args.durations), args.gap_ms)
+    if args.mode == "sustain":
+        return plan_hold_sweep(args.key, _parse_durations(args.durations), args.gap_ms)
     if args.mode == "compare":
         return plan_modifier_compare(args.button, hold_ms=args.hold_ms, rounds=args.rounds)
     if args.mode == "mouse":
@@ -439,6 +451,14 @@ def _describe(args: argparse.Namespace) -> None:
         for i, d in enumerate(durations, 1):
             print(f"    第 {i} 段：{d:g} ms")
         print("  请记下「第几段开始能稳定听到声音」——那一段就是游戏能接受的最短按时长上限。")
+    elif args.mode == "sustain":
+        durations = _parse_durations(args.durations)
+        print("  将依次按住同一个键，时长如下（每段之间停 2 秒）：")
+        for i, d in enumerate(durations, 1):
+            print(f"    第 {i} 段：{d / 1000:g} 秒")
+        print("  请听：**从第几段开始，末尾明显变小、或干脆听不见了？**")
+        print("  回答示例：'第 4 段（8 秒）开始明显变弱'")
+        print("  → 我们会取比它更保守的一档作为长音重触发间隔，让长音始终听得见。")
     elif args.mode == "compare":
         label = {"left": "左键（口述=降调）", "middle": "滚轮中键（口述=半音）", "right": "右键（口述=升调）"}[
             args.button

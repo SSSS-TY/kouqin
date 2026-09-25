@@ -9,10 +9,10 @@
 
 ## Current Status
 
-- **Active Task**: `口琴自动演奏宏 v1 —— Step 1 设计（P0 关键实验已完成，设计文档已按实测修订，等待 APPROVED）`
+- **Active Task**: `口琴自动演奏宏 v1 —— Step 2 规格（SPEC.md 已产出，等待 SPEC_APPROVED）`
 - **Task Type**: `Feature Development`
-- **Last Action**: `2026-09-25 - 仓库首推完成（提交作者改为 noreply，ERR-002 已解决）；等待设计门禁 APPROVED`
-- **Blocked**: `是：等待设计门禁 APPROVED（P0 关键实验已关闭；U4/U6 为可选补测）`
+- **Last Action**: `2026-09-25 - 设计门禁 APPROVED；产出 docs/design/SPEC.md（v1 规范性规格，含契约、模块接口、编译算法、线程模型、错误码与 14 条验收标准）；P0-7 测量工具 sustain 模式就绪`
+- **Blocked**: `是：等待规格门禁 SPEC_APPROVED`
 
 ## 背景（2026-09-25 用户需求）
 
@@ -59,13 +59,11 @@
 
 ## Next Steps
 
-1. [ ] **P0-7 长音衰减计时**（用户，B 机）—— 按住一个键，报「大约几秒开始明显变弱 / 几秒完全听不见」；据此填写 `sustain_limit_ms` - `est: 3m`
-2. [ ] **确认全局热键**（用户）—— `Ctrl+Alt+P`（开始/停止）、`Ctrl+Alt+U`（暂停/继续）、`Ctrl+Alt+L`（急停）是否可用 - `est: 1m`
-3. [x] **解除推送阻塞（ERR-002）** —— 已改为 noreply 邮箱并重写提交，`git push --force-with-lease` 成功（2026-09-25）
-4. [ ] **设计门禁** —— 用户回复 `APPROVED`（含确认 ADR-003 单进程路线与 Q4 移调/循环） - `est: 用户侧`
-5. [ ] Step 2 规格 —— 产出 `docs/design/SPEC.md`（曲谱 DSL、MIDI 导入、计划契约、UI 交互、热键与线程模型、验收标准） - `est: 1.5h` - `verify: 用户回复 SPEC_APPROVED`
-6. [ ] Step 3 测试计划 —— 产出 `docs/design/TEST_PLAN.md` - `est: 40m` - `verify: 用户回复 TEST_PLAN_APPROVED`
-7. [ ] Step 4 实现 —— 按里程碑 M2 → M4 实现（内核/曲谱/MIDI → 注入与播放引擎 → 界面） - `est: 待评估`
+1. [ ] **规格门禁** —— 用户回复 `SPEC_APPROVED`（或指出要改的条款） - `est: 用户侧`
+2. [ ] **P0-7 长音衰减计时**（用户，B 机，不阻塞）—— `python tools\p0_sendinput_demo.py sustain`，报「第几段开始末尾明显变小」；据此填写 `sustain_limit_ms` - `est: 3m`
+3. [ ] Step 3 测试计划 —— 产出 `docs/design/TEST_PLAN.md`（对准 SPEC §10 的 14 条验收标准） - `est: 40m` - `verify: 用户回复 TEST_PLAN_APPROVED`
+4. [ ] （门禁二 `CONTINUE` 后）编写测试 - `verify: 先看到红例`
+5. [ ] Step 4 实现 —— 按里程碑 M2 → M4 实现（内核/曲谱/MIDI → 注入与播放引擎 → 界面） - `est: 待评估` - `verify: 全量回归 + 游戏内验收清单`
 
 ## Suspended Tasks
 
@@ -73,9 +71,9 @@
 
 ## Blockers
 
-- [ ] 等待设计门禁与乐器行为实测结论
-  - **需要**: 用户回复 `APPROVED`（P0-1/P0-2/P0-3 已关闭；U4/U6 为可选补测）
-  - **关联错误**: 无
+- [ ] 等待规格门禁 `SPEC_APPROVED`
+  - **需要**: 用户回复 `SPEC_APPROVED`（P0 实验已关闭；P0-7 为可选补测，不阻塞）
+  - **关联错误**: 无（ERR-001/ERR-002 均已 Resolved）
 
 ## Completed
 
@@ -117,6 +115,16 @@
 - ✅ [2026-09-25] 远端仓库建立并完成首次推送（<https://github.com/SSSS-TY/kouqin>，public）；期间因 GitHub 邮箱隐私保护触发 GH007，已按 `ERR-002` 修复（noreply 邮箱 + 重写提交 + 强推）
   - **验证**: 推送成功（45 对象 / 63.38 KiB，`+ 99fa4ce...a116d67 main -> main (forced update)`）；`git log` 三个提交作者均为 `332089221+SSSS-TY@users.noreply.github.com`
   - **Commit**: `a116d67`
+- ✅ [2026-09-25] **设计门禁通过（用户回复 `APPROVED`）**：ADR-002 / ADR-003 转为 `Accepted`；热键方案（`Ctrl+Alt+P/U/L`）经用户确认可用
+  - **验证**: 用户消息原文「APPROVED，你前面提到的新热键应该可用」
+  - **Commit**: `未提交（用户本地执行）`
+- ✅ [2026-09-25] **Step 2 规格产出**：`docs/design/SPEC.md` v1.0（数据契约、模块接口、编译算法、线程与热键模型、UI 规格、错误码表、14 条可测验收标准、4 条未决项）
+  - **配套改动**: `config/settings.json` 新增 `midi` 区块（MIDI 60 → s=0）与对应依据说明；`tests/unit/test_settings_config.py` 增加 MIDI 参考音与说明覆盖断言
+  - **验证**: `python -m pytest -q` → 37 passed
+  - **Commit**: `未提交（用户本地执行）`
+- ✅ [2026-09-25] P0-7 测量工具：实验工具新增 `sustain` 模式（依次按住 2/4/6/8/10/12 秒，2 秒间隔），并补充两项单元测试
+  - **验证**: `python -m pytest -q` → 37 passed；`sustain --dry-run` 实跑输出 12 个事件
+  - **Commit**: `未提交（用户本地执行）`
 
 ## Archive
 

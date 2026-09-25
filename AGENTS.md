@@ -221,7 +221,8 @@ Agent 执行任务时，按以下顺序解释约束：
 - **语法检查**：`python -m compileall -q kouqin`
 - **静态检查**：`[待确认：尚未选定 linter，未选定前不新增]`
 - **本地启动 UI**：`python -m kouqin`（持续占用终端，**不得在主对话前台阻塞运行**）
-- **注入实验工具**：`python tools\p0_sendinput_demo.py --dry-run scale`（`--help` 列出 `check`/`scale`/`hold-sweep`/`compare`/`mouse`）
+- **注入实验工具**：`python tools\p0_sendinput_demo.py --dry-run scale`（`--help` 列出 `check`/`scale`/`hold-sweep`/`sustain`/`compare`/`mouse`）
+- **P0-7 长音衰减测量**：`python tools\p0_sendinput_demo.py sustain`（依次按住 2/4/6/8/10/12 秒，报「第几段开始末尾明显变小」）
 - **打包到游戏机 B**：`python tools\make_bundle.py --zip`（清单见 `docs/RUN_ON_B.md`）
 - **AutoHotkey**：**不再是依赖**（ADR-003）。仅当 Python 注入路线将来失效时才作为备选，届时再补命令
 

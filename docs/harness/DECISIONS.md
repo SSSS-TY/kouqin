@@ -57,7 +57,7 @@
 ## ADR-002: 曲谱双格式（文本简谱 DSL + JSON），内部统一为绝对拍位
 
 - **Date**: 2026-09-25
-- **Status**: Proposed
+- **Status**: Accepted（2026-09-25 随设计门禁 `APPROVED` 一并确认）
 - **Supersedes**: N/A
 - **Superseded by**: N/A
 
@@ -101,7 +101,7 @@
 ## ADR-003: 改用纯 Python 单进程（取代 ADR-001 的双进程运行时）
 
 - **Date**: 2026-09-25
-- **Status**: Proposed（待用户在设计门禁确认后转 Accepted）
+- **Status**: Accepted（2026-09-25 用户在设计门禁回复 `APPROVED`）
 - **Supersedes**: ADR-001
 - **Superseded by**: N/A
 
