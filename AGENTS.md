@@ -375,6 +375,8 @@ Agent 执行任务时，按以下顺序解释约束：
 - 开始工作前检查 `git status --short`；本沙盒 `.git` 只读，无法执行时如实说明。
 - Agent 不执行 `git init/add/commit/push`，只提供建议命令，由用户在本地终端执行。
 - **禁止 `git init`**：沙盒内创建的 `.git` 会导致环境刷新失败（ERR-001）。
+- **提交邮箱固定为 noreply**：`332089221+SSSS-TY@users.noreply.github.com`
+  （GitHub 已开启邮箱隐私保护，用真实邮箱推送会被 GH007 拒绝，见 ERR-002）。
 - 不把用户已有改动归功于本次任务。
 - 不使用 `--no-verify`，不重写历史。
 

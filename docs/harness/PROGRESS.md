@@ -11,7 +11,7 @@
 
 - **Active Task**: `口琴自动演奏宏 v1 —— Step 1 设计（P0 关键实验已完成，设计文档已按实测修订，等待 APPROVED）`
 - **Task Type**: `Feature Development`
-- **Last Action**: `2026-09-25 - P0-1/P0-2/P0-3 实测完成：写入 config/instrument.json（verified=true）、新增 ADR-003（纯 Python 单进程）、设计文档 §2/§3/§5.4/§6/§8 同步修订`
+- **Last Action**: `2026-09-25 - 仓库首推完成（提交作者改为 noreply，ERR-002 已解决）；等待设计门禁 APPROVED`
 - **Blocked**: `是：等待设计门禁 APPROVED（P0 关键实验已关闭；U4/U6 为可选补测）`
 
 ## 背景（2026-09-25 用户需求）
@@ -61,7 +61,7 @@
 
 1. [ ] **P0-7 长音衰减计时**（用户，B 机）—— 按住一个键，报「大约几秒开始明显变弱 / 几秒完全听不见」；据此填写 `sustain_limit_ms` - `est: 3m`
 2. [ ] **确认全局热键**（用户）—— `Ctrl+Alt+P`（开始/停止）、`Ctrl+Alt+U`（暂停/继续）、`Ctrl+Alt+L`（急停）是否可用 - `est: 1m`
-3. [ ] **解除推送阻塞（ERR-002）** —— GitHub 以 GH007 拒绝推送（作者邮箱是受保护的私有邮箱）。按 `docs/harness/errors/ERR-002.md` 的修复方案把 `user.email` 换成 noreply 地址并重写提交后 `git push --force-with-lease origin main` - `est: 5m`
+3. [x] **解除推送阻塞（ERR-002）** —— 已改为 noreply 邮箱并重写提交，`git push --force-with-lease` 成功（2026-09-25）
 4. [ ] **设计门禁** —— 用户回复 `APPROVED`（含确认 ADR-003 单进程路线与 Q4 移调/循环） - `est: 用户侧`
 5. [ ] Step 2 规格 —— 产出 `docs/design/SPEC.md`（曲谱 DSL、MIDI 导入、计划契约、UI 交互、热键与线程模型、验收标准） - `est: 1.5h` - `verify: 用户回复 SPEC_APPROVED`
 6. [ ] Step 3 测试计划 —— 产出 `docs/design/TEST_PLAN.md` - `est: 40m` - `verify: 用户回复 TEST_PLAN_APPROVED`
@@ -114,9 +114,9 @@
 - ✅ [2026-09-25] 许可与公开策略：新增 `LICENSE`（个人非商业使用许可 v1.0）+ `README.md` 许可小节 + ADR-004（public 仓库、仅 owner 可推送、禁止再分发与商业用途）
   - **验证**: 发布前敏感信息扫描无命中（无密钥/邮箱写入文件）；文档与许可条款一致
   - **Commit**: `未提交（用户本地执行）`
-- ⚠️ [2026-09-25] 远端仓库已建立并完成首批推送（<https://github.com/SSSS-TY/kouqin>，public）；随后开启 GitHub 邮箱隐私保护导致最新一次推送被 GH007 拒绝 —— 记录 `ERR-002`，等待用户按修复方案处理后完成推送
-  - **验证**: 用户提供的推送输出（`! [remote rejected] main -> main`）；待修复后复核
-  - **Commit**: `待补推`
+- ✅ [2026-09-25] 远端仓库建立并完成首次推送（<https://github.com/SSSS-TY/kouqin>，public）；期间因 GitHub 邮箱隐私保护触发 GH007，已按 `ERR-002` 修复（noreply 邮箱 + 重写提交 + 强推）
+  - **验证**: 推送成功（45 对象 / 63.38 KiB，`+ 99fa4ce...a116d67 main -> main (forced update)`）；`git log` 三个提交作者均为 `332089221+SSSS-TY@users.noreply.github.com`
+  - **Commit**: `a116d67`
 
 ## Archive
 
