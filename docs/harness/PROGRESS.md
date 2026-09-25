@@ -9,10 +9,10 @@
 
 ## Current Status
 
-- **Active Task**: `口琴自动演奏宏 v1 —— Step 2 规格（SPEC.md 已产出，等待 SPEC_APPROVED）`
+- **Active Task**: `口琴自动演奏宏 v1 —— Step 3 测试（TEST_PLAN.md 已产出，等待 TEST_PLAN_APPROVED，含 4 条规格勘误待确认）`
 - **Task Type**: `Feature Development`
-- **Last Action**: `2026-09-25 - 设计门禁 APPROVED；产出 docs/design/SPEC.md（v1 规范性规格，含契约、模块接口、编译算法、线程模型、错误码与 14 条验收标准）；P0-7 测量工具 sustain 模式就绪`
-- **Blocked**: `是：等待规格门禁 SPEC_APPROVED`
+- **Last Action**: `2026-09-25 - 规格门禁 SPEC_APPROVED；产出 docs/design/TEST_PLAN.md（87 个用例，覆盖 A1–A14），并提出 4 条规格勘误待确认`
+- **Blocked**: `是：等待 TEST_PLAN_APPROVED（含确认勘误 E1–E4）`
 
 ## 背景（2026-09-25 用户需求）
 
@@ -59,11 +59,11 @@
 
 ## Next Steps
 
-1. [ ] **规格门禁** —— 用户回复 `SPEC_APPROVED`（或指出要改的条款） - `est: 用户侧`
-2. [ ] **P0-7 长音衰减计时**（用户，B 机，不阻塞）—— `python tools\p0_sendinput_demo.py sustain`，报「第几段开始末尾明显变小」；据此填写 `sustain_limit_ms` - `est: 3m`
-3. [ ] Step 3 测试计划 —— 产出 `docs/design/TEST_PLAN.md`（对准 SPEC §10 的 14 条验收标准） - `est: 40m` - `verify: 用户回复 TEST_PLAN_APPROVED`
-4. [ ] （门禁二 `CONTINUE` 后）编写测试 - `verify: 先看到红例`
-5. [ ] Step 4 实现 —— 按里程碑 M2 → M4 实现（内核/曲谱/MIDI → 注入与播放引擎 → 界面） - `est: 待评估` - `verify: 全量回归 + 游戏内验收清单`
+1. [ ] **门禁一 `TEST_PLAN_APPROVED`** —— 含确认 4 条规格勘误 E1–E4（见 `docs/design/TEST_PLAN.md` §8） - `est: 用户侧`
+2. [ ] **编写测试（红例）** —— 按 TEST_PLAN 建立 fixtures（`.kq` 样例、`.mid` 生成器、golden 计划）与 87 个用例；预期 pytest 以 `ModuleNotFoundError` 失败 - `est: 2h` - `verify: 运行后确认失败原因是模块未实现，而非测试自身写错`
+3. [ ] **门禁二 `CONTINUE`** —— 测试写完交给用户确认 - `est: 用户侧`
+4. [ ] Step 4 实现 —— M2 内核/曲谱/MIDI → M3 注入与播放引擎 → M4 界面；开始时同步修订 SPEC 的 E1–E4 勘误（记为文档勘误，不新开 ADR） - `est: 待评估` - `verify: `python -m pytest -q` 全绿 + MAN-01…MAN-07`
+5. [ ] **P0-7 长音衰减计时**（用户，B 机，不阻塞）—— `python tools\p0_sendinput_demo.py sustain`；据此填写 `sustain_limit_ms` - `est: 3m`
 
 ## Suspended Tasks
 
@@ -71,8 +71,8 @@
 
 ## Blockers
 
-- [ ] 等待规格门禁 `SPEC_APPROVED`
-  - **需要**: 用户回复 `SPEC_APPROVED`（P0 实验已关闭；P0-7 为可选补测，不阻塞）
+- [ ] 等待测试计划门禁 `TEST_PLAN_APPROVED`
+  - **需要**: 用户回复 `TEST_PLAN_APPROVED`，并确认规范勘误 E1–E4（`hold_ms` 上界、长音切分预算、休止跨越、KQ006 死码）
   - **关联错误**: 无（ERR-001/ERR-002 均已 Resolved）
 
 ## Completed
@@ -124,6 +124,14 @@
   - **Commit**: `未提交（用户本地执行）`
 - ✅ [2026-09-25] P0-7 测量工具：实验工具新增 `sustain` 模式（依次按住 2/4/6/8/10/12 秒，2 秒间隔），并补充两项单元测试
   - **验证**: `python -m pytest -q` → 37 passed；`sustain --dry-run` 实跑输出 12 个事件
+  - **Commit**: `未提交（用户本地执行）`
+- ✅ [2026-09-25] **规格门禁通过（用户回复 `SPEC_APPROVED`）**
+  - **产出**: `docs/design/SPEC.md` v1.0（293 行，规范性：数据契约 / 模块接口 / 编译算法 / 线程与热键模型 / UI 规格 / 20 个错误码 / A1–A14 验收标准 / 4 条未决项）
+  - **Commit**: `未提交（用户本地执行）`
+- ✅ [2026-09-25] **Step 3 测试计划产出**：`docs/design/TEST_PLAN.md` v1.0（284 行）
+  - **内容**: 87 个用例（P11 / K22 / J3 / M10 / C14 / E9 / G7 / R4 / MAN7）+ 覆盖矩阵 + 层级与素材清单 + 红例策略 + 不测范围
+  - **同时提出 4 条规格勘误 E1–E4**（`hold_ms` 上界、长音切分预算、休止跨越、KQ006 死码），待用户与门禁一并确认
+  - **验证**: 用例 ID 与 A1–A14 的覆盖矩阵完整（无遗漏验收标准）；`python -m pytest -q` → 37 passed（现有测试未受影响）
   - **Commit**: `未提交（用户本地执行）`
 
 ## Archive
