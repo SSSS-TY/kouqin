@@ -1,0 +1,33 @@
+{
+  "_说明": "golden_bar.kq 的期望计划（按 SPEC §5 手工推导）。只比对结构化字段，不含 generated_at/source 这类易变字段。",
+  "tempo_bpm": 120,
+  "speed": 1.0,
+  "transpose": 0,
+  "offset_ms": 0,
+  "params": {
+    "min_hold_ms": 40,
+    "note_gap_ms": 30,
+    "modifier_lead_ms": 10,
+    "modifier_tail_ms": 10,
+    "countdown_ms": 3000,
+    "retrigger_long_notes": true,
+    "sustain_limit_ms": null
+  },
+  "notes": [
+    { "start_ms": 0, "duration_ms": 500, "pitch": 0, "repr": "1", "key": "z", "buttons": [] },
+    { "start_ms": 500, "duration_ms": 500, "pitch": 7, "repr": "5", "key": "b", "buttons": [] },
+    { "start_ms": 1000, "duration_ms": 500, "pitch": 4, "repr": "3", "key": "c", "buttons": [] },
+    { "start_ms": 1500, "duration_ms": 500, "pitch": 0, "repr": "1", "key": "z", "buttons": [] }
+  ],
+  "events": [
+    { "t_ms": 0, "op": "key_down", "arg": "z" },
+    { "t_ms": 470, "op": "key_up", "arg": "z" },
+    { "t_ms": 500, "op": "key_down", "arg": "b" },
+    { "t_ms": 970, "op": "key_up", "arg": "b" },
+    { "t_ms": 1000, "op": "key_down", "arg": "c" },
+    { "t_ms": 1470, "op": "key_up", "arg": "c" },
+    { "t_ms": 1500, "op": "key_down", "arg": "z" },
+    { "t_ms": 1970, "op": "key_up", "arg": "z" }
+  ]
+}
+

@@ -9,10 +9,10 @@
 
 ## Current Status
 
-- **Active Task**: `口琴自动演奏宏 v1 —— Step 3 测试（TEST_PLAN.md 已产出，等待 TEST_PLAN_APPROVED，含 4 条规格勘误待确认）`
+- **Active Task**: `口琴自动演奏宏 v1 —— Step 3 测试（测试已写完，处于预期的「红」状态，等待门禁二 CONTINUE）`
 - **Task Type**: `Feature Development`
-- **Last Action**: `2026-09-25 - 规格门禁 SPEC_APPROVED；产出 docs/design/TEST_PLAN.md（87 个用例，覆盖 A1–A14），并提出 4 条规格勘误待确认`
-- **Blocked**: `是：等待 TEST_PLAN_APPROVED（含确认勘误 E1–E4）`
+- **Last Action**: `2026-09-25 - TEST_PLAN_APPROVED；E1–E4 并入 SPEC（v1.1）；建立 19 个样例素材（含 7 个 .mid）与 80 个测试函数；确认红例`
+- **Blocked**: `是：等待门禁二 CONTINUE（测试已就绪，目标模块尚未实现）`
 
 ## 背景（2026-09-25 用户需求）
 
@@ -59,10 +59,10 @@
 
 ## Next Steps
 
-1. [ ] **门禁一 `TEST_PLAN_APPROVED`** —— 含确认 4 条规格勘误 E1–E4（见 `docs/design/TEST_PLAN.md` §8） - `est: 用户侧`
-2. [ ] **编写测试（红例）** —— 按 TEST_PLAN 建立 fixtures（`.kq` 样例、`.mid` 生成器、golden 计划）与 87 个用例；预期 pytest 以 `ModuleNotFoundError` 失败 - `est: 2h` - `verify: 运行后确认失败原因是模块未实现，而非测试自身写错`
-3. [ ] **门禁二 `CONTINUE`** —— 测试写完交给用户确认 - `est: 用户侧`
-4. [ ] Step 4 实现 —— M2 内核/曲谱/MIDI → M3 注入与播放引擎 → M4 界面；开始时同步修订 SPEC 的 E1–E4 勘误（记为文档勘误，不新开 ADR） - `est: 待评估` - `verify: `python -m pytest -q` 全绿 + MAN-01…MAN-07`
+1. [x] **门禁一 `TEST_PLAN_APPROVED`** —— 用户批准（2026-09-25），并确认规格勘误 E1–E4
+2. [x] **编写测试（红例）** —— 19 个样例素材 + 80 个测试函数；`python -m pytest -q` 因 `No module named 'kouqin'` 收集失败（预期红），已有 37 个测试仍全绿
+3. [ ] **门禁二 `CONTINUE`** —— 等用户确认后进入实现 - `est: 用户侧`
+4. [ ] Step 4 实现 —— M2 内核/曲谱/MIDI → M3 注入与播放引擎 → M4 界面 - `est: 待评估` - `verify: `python -m pytest -q` 全绿 + MAN-01…MAN-07`
 5. [ ] **P0-7 长音衰减计时**（用户，B 机，不阻塞）—— `python tools\p0_sendinput_demo.py sustain`；据此填写 `sustain_limit_ms` - `est: 3m`
 
 ## Suspended Tasks
@@ -71,8 +71,8 @@
 
 ## Blockers
 
-- [ ] 等待测试计划门禁 `TEST_PLAN_APPROVED`
-  - **需要**: 用户回复 `TEST_PLAN_APPROVED`，并确认规范勘误 E1–E4（`hold_ms` 上界、长音切分预算、休止跨越、KQ006 死码）
+- [ ] 等待门禁二 `CONTINUE`
+  - **需要**: 用户在测试就绪（红例）后回复 `CONTINUE`；另需知晓测试期新增的两条规范补充 E5（负时间平移）/E6（换修饰时序模型）
   - **关联错误**: 无（ERR-001/ERR-002 均已 Resolved）
 
 ## Completed
@@ -132,6 +132,15 @@
   - **内容**: 87 个用例（P11 / K22 / J3 / M10 / C14 / E9 / G7 / R4 / MAN7）+ 覆盖矩阵 + 层级与素材清单 + 红例策略 + 不测范围
   - **同时提出 4 条规格勘误 E1–E4**（`hold_ms` 上界、长音切分预算、休止跨越、KQ006 死码），待用户与门禁一并确认
   - **验证**: 用例 ID 与 A1–A14 的覆盖矩阵完整（无遗漏验收标准）；`python -m pytest -q` → 37 passed（现有测试未受影响）
+  - **Commit**: `未提交（用户本地执行）`
+- ✅ [2026-09-25] **测试计划门禁通过（用户回复 `TEST_PLAN_APPROVED` + 同意 E1–E4）**；E1–E4 已并入 `SPEC.md`（记为 v1.1 勘误，不新开 ADR）
+  - **验证**: 用户消息原文「E1–E4 是否同意，TEST_PLAN_APPROVED」
+  - **Commit**: `未提交（用户本地执行）`
+- ✅ [2026-09-25] **Step 3 测试编写完成（红例阶段）**
+  - **素材**: 11 个 `.kq` 样例、7 个 `.mid` 二进制（由 `tools/make_test_midi.py` 确定性生成）、1 个 golden 计划 `expected/golden_bar.plan.json`（手工推导）
+  - **测试**: 8 个新测试文件、80 个测试函数（`test_pitch_mapping`/`test_kq_parser`/`test_score_json`/`test_midi_import`/`test_compile_plan`/`test_player_engine`/`test_contracts`/`test_invariants`）+ `tests/manual/ACCEPTANCE.md`
+  - **测试期新增两条规范补充**：E5（负时间整体平移 + `offset_ms`）、E6（换修饰时序模型 = 相同组合不重按；最小间隔 `lead+tail`）；已并入 SPEC §5.4 与 §13，并在 TEST_PLAN §11 列出实现必须满足的接口细节（T1–T13、S1–S3）
+  - **验证**: `python -m pytest -q` → 8 个文件以 `ModuleNotFoundError: No module named 'kouqin'` 收集失败（**预期的红**）；`python -m pytest -q tests/unit/test_{instrument_config,settings_config,p0_sendinput_demo,make_bundle}.py` → **37 passed**（既有测试未受影响）
   - **Commit**: `未提交（用户本地执行）`
 
 ## Archive

@@ -60,6 +60,7 @@ tests/
 | 文件 | 内容要点 | 用途 |
 |------|----------|------|
 | `scores/simple.kq` | 小星星 32 拍，4/4 | golden 计划、往返测试 |
+| `scores/golden_bar.kq` | `1 5 3 1`（4 个自然音，无修饰键切换） | golden 计划（完整事件序列可手工推导） |
 | `scores/advanced.kq` | 变化音 `#4`/`b3`、附点 `5.`、休止 `0`、连音 `1'~ 1'`、八度 `1,`/`1''`、注释、`@transpose 2` | A1 全覆盖 |
 | `scores/bad_meta_name.kq` | `@foo 1` | KQ002 |
 | `scores/bad_meta_value.kq` | `@tempo 0` | KQ003 |
@@ -72,7 +73,7 @@ tests/
 | `midi/sample_multi.mid` | format 1：旋律轨 + 低音轨 + channel 10 打击轨 + 一处和弦 | M-01…M-07 |
 | `midi/sample_format0.mid` | format 0 单轨 + running status | M-02 |
 | `midi/bad_format2.mid`、`bad_smpte.mid`、`no_notes.mid`、`not_midi.bin` | format 2 / SMPTE / 无音符 / 非 MIDI | MD001–MD004 |
-| `expected/simple.plan.json` | `simple.kq` + 固定参数（tempo=100、speed=1.0、transpose=0、`sustain_limit_ms=null`）的完整计划 | golden |
+| `expected/golden_bar.plan.json` | `golden_bar.kq` + 固定参数（tempo=120、speed=1.0、transpose=0、`sustain_limit_ms=null`）的计划 | golden |
 
 **【规范性】** 二进制 `.mid` 由 `tools/make_test_midi.py` 生成并**入库**；
 用例 `M-00` 会重新生成到内存并与入库文件逐字节比较，防止素材被误改。
@@ -165,6 +166,7 @@ tests/
 | C-12 | A8 | 每个非休止音的 `fingering` | 与事件序列中的键/鼠标键完全一致 |
 | C-13 | A5 | `params` 区块 | 与 `settings.json` 的 `playback` 一致 |
 | C-14 | 性能 | 2000 音合成曲谱 | 编译 < 1000 ms |
+| C-15 | A7 | 相邻两音组合**相同**（`1, 1,`） | 整段只按放一次鼠标键（`mouse_down`/`mouse_up` 各一次） |
 
 ### 5.6 播放引擎与注入
 
@@ -253,6 +255,8 @@ tests/
 | E2 | §5.4-2 切分 `n = ceil(hold_ms / sustain_limit_ms)`，段间插 `note_gap_ms` | 段间空隙未计入预算，总跨度变成 `hold_ms + (n−1)×gap`，**超出原时值**并可能侵入下一个音 | 改为按含空隙计算：`n = ceil((hold_ms + gap) / (sustain + gap))`，每段 = `(hold_ms − (n−1)×gap) / n`，总跨度恒等于 `hold_ms` |
 | E3 | §5.4-3「相邻两音的 `buttons` 不同时」 | 未定义「相邻」是否跨越休止符：若两音之间有休止，按字面会漏做修饰键切换 | 明确为「相邻的**两个非休止音**」；休止符不产生事件，也不中断修饰键状态的延续 |
 | E4 | §9 错误码 KQ006「时值求值结果 ≤ 0」 | 由 §3.4 求值规则（除 `2^n`）可知该结果恒为正，此码**无法触发**（死码） | 把 KQ006 改为「时值过小：结果 < 1/64 拍」（捕捉 `_____` 之类输入错误），编号保留；KQ007 继续留空 |
+| E5 | §5.4-4「修饰键提前 `modifier_lead_ms` 按下」+ §5.5-1「所有 `t_ms ≥ 0`」 | 首个音即需修饰键时，`mouse_down` 落在 `t < 0`，与不变量冲突 | 最早事件为负则整个计划后移，新增 `offset_ms` 字段记录位移 |
+| E6 | §5.4-3 原公式 `tail + (\|旧\新\| + \|新\旧\|) × lead` | 与「组合相同则不重按」的实现模型不一致，且未定义松开与按下的确切时刻 | 改为「相同组合不动作」模型，最小间隔 = `lead + tail` |
 
 **【规范性】** 确认后，Step 4 开始时同步修订 `SPEC.md`，并在 `DECISIONS.md` 记为文档勘误（不新开 ADR）。
 受影响用例：E1 → C-01/C-09/R-01；E2 → C-04/R-02；E3 → C-07/C-08；E4 → K-16。
@@ -282,3 +286,33 @@ tests/
 | MIDI 导出 | v1 不做（SPEC §1.2） |
 | 图片/PDF 谱面识别 | M5 范围 |
 | Windows 之外的平台 | 项目仅支持 Windows（SPEC §1.1） |
+
+---
+
+## 11. 测试所依赖的接口细节（**实现必须满足**）
+
+SPEC 只规定了模块级接口，测试还需要下面这些具体名称；Step 4 实现时以此为准。
+
+| 编号 | 对象 | 约定 |
+|------|------|------|
+| T1 | `Instrument` | `verified: bool`；`keys: tuple[KeyDef, ...]`（`.key/.degree/.octave`）；`modifiers: tuple[ModifierDef, ...]`（`.button/.label/.semitone`）；`modifier_sets: tuple[ModifierSet, ...]`（`.buttons: tuple[str, ...]/.status/.note`） |
+| T2 | `Fingering` | `.key: str`、`.buttons: tuple[str, ...]` |
+| T3 | `Note` | 字段 `start_beat / duration_beat / pitch / repr / tie / line` |
+| T4 | `Score` | 字段 `title / tempo_bpm / meter / transpose / notes / source`，**另有 `issues: tuple[Issue, ...]`** 承载解析期 warning（KQ009） |
+| T5 | `Issue` | `code / level / message`，可选 `line`、`beat` |
+| T6 | `ScoreError` / `PlanError` | 均携带 `issues: tuple[Issue, ...]` |
+| T7 | `Plan` | `version / title / tempo_bpm / speed / transpose / source / generated_at / offset_ms / params / issues / notes / events`；`to_dict()` 产出 SPEC §3.7 的 JSON |
+| T8 | `PlanNote` / `PlanEvent` | `PlanNote`: `index/start_ms/duration_ms/pitch/repr/fingering`；`PlanEvent`: `t_ms/op/arg` |
+| T9 | `Settings` | `playback: dict`、`hotkeys: dict`、`midi: dict`、`issues: tuple[Issue, ...]`（缺字段时补默认值 + warning） |
+| T10 | `MidiImportResult` | `score: Score`、`dropped_notes: int`、`issues: tuple[Issue, ...]` |
+| T11 | `Player` | `Player(plan, *, sender, on_progress=None, on_state=None, loop=False, countdown_ms=0)`；方法 `play/pause/resume/stop/panic/shutdown`；属性 `state`、`loop_count` |
+| T12 | 注入器协议 | `send(action)`（action 具备 `kind`/`arg`）、`release_all()` |
+| T13 | 状态取值 | `idle / countdown / playing / paused / stopped / error` |
+
+### 11.1 随勘误 E5/E6 新增的规范补充
+
+| 编号 | 补充 |
+|------|------|
+| S1 | `Plan.offset_ms`：整体后移量（毫秒），通常为 0；非零时 `notes[].start_ms` 与所有事件时间均已平移 |
+| S2 | 相邻两音修饰组合相同时**不产生任何鼠标事件**（组合保持按住） |
+| S3 | 换修饰最小间隔 = `modifier_lead_ms + modifier_tail_ms`；不足时后一音及其后续整体顺延并记 CP002 |

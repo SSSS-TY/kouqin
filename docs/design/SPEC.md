@@ -293,7 +293,7 @@ ms_per_beat = 60000 / (tempo_bpm × speed)
     若 fingering 为 None → CP001（带 note.repr 与行号）
     start_ms    = note.start_beat    × ms_per_beat
     duration_ms = note.duration_beat × ms_per_beat
-    hold_ms     = max(duration_ms − note_gap_ms, min_hold_ms)
+    hold_ms     = max(1, min(duration_ms, max(duration_ms − note_gap_ms, min_hold_ms)))   # §13 勘误 E1
 ```
 
 ### 5.3 候选优先级（`find_fingering`）
@@ -308,18 +308,33 @@ ms_per_beat = 60000 / (tempo_bpm × speed)
 ### 5.4 后处理（顺序固定）
 
 1. **连音合并**：`tie == true` 且音高相同的相邻音合并为一次按住（`hold` 累加）。
-2. **长音切分**：若 `sustain_limit_ms` 非空且 `retrigger_long_notes` 为真且 `hold_ms > sustain_limit_ms`：
-   `段数 n = ceil(hold_ms / sustain_limit_ms)`，每段 `hold_ms / n`（毫秒取整，余数并入最后一段），
-   段间插入 `note_gap_ms`；每段独立重新起音。否则整段按住。
-3. **修饰键切换**：相邻两音的 `buttons` 不同时，必须**先松开按键 → 换修饰键 → 再按下**：
+2. **长音切分**（见 §13 勘误 E2）：若 `sustain_limit_ms` 非空、`retrigger_long_notes` 为真且
+   `hold_ms > sustain_limit_ms`：
 
    ```text
-   最小间隔 = modifier_tail_ms + (|旧 \ 新| + |新 \ 旧|) × modifier_lead_ms
+   gap = note_gap_ms
+   段数 n    = ceil((hold_ms + gap) / (sustain_limit_ms + gap))
+   每段时长  = (hold_ms − (n−1) × gap) / n      # 毫秒取整，余数并入最后一段
    ```
 
-   若两音实际间隔小于该值，则把后一个音整体**顺延**（保证音准优先于节拍），并记录 CP002 警告。
-4. **事件生成**：对每个按下段产生
-   `mouse_down`（修饰键，提前 `modifier_lead_ms`）→ `key_down` → `key_up` → `mouse_up`（延后 `modifier_tail_ms`）。
+   段间插入 `gap`，**总跨度恒等于 `hold_ms`**（不会挤到下一个音）；每段独立重新起音。
+   否则整段按住。
+3. **修饰键切换**（见 §13 勘误 E3、E6）：维护「当前按住的修饰键集合」`held`（初始为空）。
+   对每个音的 `need = fingering.buttons`：
+
+   - `need == held` → **不发任何鼠标事件**（组合保持不变，不重复按放）；
+   - `need != held` → 先松开 `held \ need`（时间 = **上一个音的 `key_up` + `modifier_tail_ms`**），
+     再在 **本音 `key_down` − `modifier_lead_ms`** 按下 `need \ held`。
+
+   ```text
+   换修饰所需的最小间隔 = modifier_lead_ms + modifier_tail_ms
+   ```
+
+   若相邻两音（**非休止音之间**）的实际间隔不足，则把后一个音及其后续整体**顺延**到满足为止
+   （音准优先于节拍），并记录 CP002 警告。休止符不产生事件，也**不中断** `held` 状态。
+4. **事件生成**：对每个按下段产生 `key_down` → （保持 `hold_ms`）→ `key_up`；
+   修饰键的 `mouse_down` / `mouse_up` 由规则 3 决定（首次按下提前 `modifier_lead_ms`，
+   最后一次松开延后 `modifier_tail_ms`）。
 
 ### 5.5 不变量（生成后必须校验，违反则拒绝出计划）
 
@@ -405,7 +420,7 @@ idle → countdown → playing ⇄ paused → stopped → idle
 | KQ003 | error | 元信息值非法（tempo ≤ 0 / transpose 非整数 / meter 或 key 格式错误） |
 | KQ004 | error | 无法解析的音符标记 |
 | KQ005 | error | 休止符带变化音或八度标记 |
-| KQ006 | error | 时值求值结果 ≤ 0 |
+| KQ006 | error | 时值过小：求值结果 < 1/64 拍（见 §13 勘误 E4；原「≤ 0」为死码） |
 | KQ008 | error | `~` 出现在首音或与前音音高不同 |
 | KQ010 | error | 曲谱内没有音符 |
 | KQ011 | error | 音高超出 ±48 半音 |
@@ -462,3 +477,24 @@ idle → countdown → playing ⇄ paused → stopped → idle
 - 测试计划（怎么测）：`TEST_PLAN.md`（Step 3 产出）
 - 决策记录：`../harness/DECISIONS.md`（ADR-001…004）
 
+---
+
+## 13. 勘误记录（v1.0 → v1.1，2026-09-25）
+
+Step 3 编写测试用例时发现 4 处边界定义有缺陷，经用户确认后修订（不另开 ADR）。
+
+| 编号 | 原条款 | 问题 | 修订 |
+|------|--------|------|------|
+| E1 | §5.2 `hold_ms = max(时长 − 间隔, 最短时长)` | 短音符（如 30 ms）会被拉长到 `min_hold_ms`（40 ms），**超过音符自身时值**，与下一音重叠并违反 §5.5 不变量 | 改为 `max(1, min(时长, max(时长 − 间隔, 最短时长)))`：最短按时长不得突破音符自身时值；该式在「时长 < 最短时长」时也唯一确定 |
+| E2 | §5.4-2 `n = ceil(hold / sustain)`，段间插 `gap` | 空隙未计入预算，切分后总跨度 = `hold + (n−1)×gap`，**超出原时值**并侵入下一音 | 改为按含空隙计算段数，每段 = `(hold − (n−1)×gap) / n`，总跨度恒等于 `hold` |
+| E3 | §5.4-3「相邻两音」 | 未定义是否跨越休止符，字面实现会**漏做修饰键切换**，导致音高错误 | 明确为「相邻的两个**非休止**音」；休止不中断修饰键状态的延续 |
+| E4 | §9 KQ006「时值 ≤ 0」 | 求值规则含除以 `2^n`，结果**恒为正**，该错误码无法触发（死码） | 改为「时值过小：< 1/64 拍」，编号保留；KQ007 继续留空 |
+
+以下两条是编写测试时暴露的**实现二义性**（E5、E6），一并并入正文：
+
+| 编号 | 原条款 | 问题 | 修订 |
+|------|--------|------|------|
+| E5 | §5.5-1「所有 `t_ms ≥ 0`」与 §5.4-4「修饰键提前 `modifier_lead_ms` 按下」 | 若**首个音**即需按住修饰键，`mouse_down` 会落在 `t < 0`（如 −10 ms），与不变量冲突 | 若最早事件为负，则**整个计划后移**使最早事件为 0；计划新增字段 `offset_ms` 记录位移，`notes[].start_ms` 一并平移 |
+| E6 | §5.4-3 原公式 `tail + (|旧\新| + |新\旧|) × lead` | 与「组合相同则不重按」的实现模型不一致（按钮数加权会让同组合也付出代价），且未定义松开/按下的确切时刻 | 改为「相同组合不动作」模型，逐条给出松开与按下时刻，最小间隔 = `lead + tail` |
+
+**影响范围**：§5.2、§5.4、§5.5、§9 与测试计划的 C-01/C-04/C-07/C-08/C-09/K-16/R-01/R-02。
