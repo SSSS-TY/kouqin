@@ -111,7 +111,7 @@ class MainWindow(QtWidgets.QMainWindow):
         play_menu = self.menuBar().addMenu("播放(&P)")
         play_menu.addAction("开始 / 停止", self.toggle_play, "Ctrl+Alt+P")
         play_menu.addAction("暂停 / 继续", self.toggle_pause, "Ctrl+Alt+U")
-        play_menu.addAction("急停（松开所有键）", self.panic, "Ctrl+Alt+L")
+        play_menu.addAction("急停（松开所有键）", self.panic, "Ctrl+Alt+K")
 
         setup_menu = self.menuBar().addMenu("设置(&S)")
         setup_menu.addAction("播放参数与键位…", self.open_settings)
@@ -441,7 +441,8 @@ class MainWindow(QtWidgets.QMainWindow):
             "口琴自动演奏宏 v1\n\n"
             "按乐谱在《三角洲行动》里自动演奏口琴道具。\n"
             "只发送按键与鼠标键，不读写游戏内存、不修改游戏文件。\n\n"
-            "快捷键：Ctrl+Alt+P 开始/停止　Ctrl+Alt+U 暂停/继续　Ctrl+Alt+L 急停\n"
+            "快捷键：Ctrl+Alt+P 开始/停止　Ctrl+Alt+U 暂停/继续　Ctrl+Alt+K 急停\n"
+            "（可在「设置 → 全局热键」里改；每个热键旁有「检测」按钮验证是否被占用）\n"
             "许可：个人非商业（见 LICENSE）",
         )
 
@@ -461,12 +462,20 @@ class MainWindow(QtWidgets.QMainWindow):
             "panic_release": self.panic,
         }
         failed = []
+        self._hotkey_failures: list[str] = []
         for key, callback in actions.items():
             combo = self.settings.hotkeys.get(key, "")
             if not combo or not self.hotkey_manager.register(hwnd, combo, callback):
                 failed.append(f"{key}（{combo}）")
         if failed:
-            self.statusBar().showMessage(f"以下全局热键注册失败（可能被占用）：{'、'.join(failed)}", 10000)
+            self._hotkey_failures = failed
+            message = (
+                f"全局热键注册失败：{'、'.join(failed)}\n"
+                "多半是被别的程序（QQ、微信、录屏等）占用了。\n"
+                "请到「设置 → 全局热键」点「检测」换一个可用的键，重启程序生效。"
+            )
+            self.statusBar().showMessage(f"热键未生效：{'、'.join(failed)}（可在设置里更换）", 20000)
+            QtCore.QTimer.singleShot(0, lambda: QtWidgets.QMessageBox.warning(self, "全局热键未生效", message))
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:  # noqa: N802 (Qt 命名)
         if self.player is not None:

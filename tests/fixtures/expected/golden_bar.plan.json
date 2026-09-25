@@ -1,5 +1,5 @@
 {
-  "_说明": "golden_bar.kq 的期望计划（按 SPEC §5 手工推导）。只比对结构化字段，不含 generated_at/source 这类易变字段。",
+  "_说明": "golden_bar.kq 的期望计划（按 SPEC §5 手工推导）。只比对结构化字段，不含 generated_at/source 这类易变字段。2026-09-25：P0-7 实测后 sustain_limit_ms 由 null 改为 6000（仅回显参数变化，事件时刻不变）。",
   "tempo_bpm": 120,
   "speed": 1.0,
   "transpose": 0,
@@ -11,7 +11,7 @@
     "modifier_tail_ms": 10,
     "countdown_ms": 3000,
     "retrigger_long_notes": true,
-    "sustain_limit_ms": null
+    "sustain_limit_ms": 6000
   },
   "notes": [
     { "start_ms": 0, "duration_ms": 500, "pitch": 0, "repr": "1", "key": "z", "buttons": [] },
@@ -30,4 +30,3 @@
     { "t_ms": 1970, "op": "key_up", "arg": "z" }
   ]
 }
-

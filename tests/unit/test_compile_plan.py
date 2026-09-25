@@ -88,6 +88,13 @@ def test_c04_long_note_is_split_within_its_own_duration(tmp_path: Path, instrume
 
 
 def test_c05_sustain_unknown_keeps_single_hold(tmp_path: Path, instrument) -> None:
+    """上限为 null（未实测）时不得切分——如实按住整段时值。"""
+    plan = compile_text("@tempo 100\n\n1----", tmp_path, instrument, sustain_limit_ms=None)
+    assert times(plan) == [0, 2970]
+
+
+def test_c05b_note_shorter_than_limit_is_not_split(tmp_path: Path, instrument) -> None:
+    """实测上限 6 秒：2970 ms 的普通长音不应被切分（保证重触发只在极长音上生效）。"""
     plan = compile_text("@tempo 100\n\n1----", tmp_path, instrument)
     assert times(plan) == [0, 2970]
 

@@ -7,12 +7,12 @@
     "modifier_tail_ms": 10,
     "countdown_ms": 3000,
     "retrigger_long_notes": true,
-    "sustain_limit_ms": null
+    "sustain_limit_ms": 6000
   },
   "hotkeys": {
     "toggle_play": "Ctrl+Alt+P",
     "pause_resume": "Ctrl+Alt+U",
-    "panic_release": "Ctrl+Alt+L"
+    "panic_release": "Ctrl+Alt+K"
   },
   "midi": {
     "reference_note": 60,
@@ -25,8 +25,8 @@
     "modifier_tail_ms": "修饰键晚于按键松开。取值待首曲回归校准（当前为保守默认）。",
     "countdown_ms": "切换回游戏所需的准备时间（U5 起始延迟未测，先取 3 秒）。",
     "retrigger_long_notes": "长按会渐强→出现波浪感→衰减到消失（用户实测）。开启后，超长音会被切成若干段重新起音，避免后段听不见。",
-    "sustain_limit_ms": "**未测**（P0-7）：需要用户在游戏里计时「按住后大约几秒开始明显变弱 / 几秒完全消失」。为 null 时编译器不切分长音，如实按住。",
-    "hotkeys": "用户明确要求不使用 F8 / F9；2026-09-25 用户确认 Ctrl+Alt+P/U/L 可用。RegisterHotKey 会「吞掉」组合键，不会传给游戏；字母也刻意避开口琴键位 z x c v b n m ,",
+    "sustain_limit_ms": "P0-7 实测（2026-09-25）：按住 2/4/6/8/10 秒均正常；**第 6 段（12 秒）约到 10 秒时声音明显变小、并很快听不见**（此时游戏内仍显示按键被按住）。取 6 秒作为重触发间隔，留 4 秒余量；tempo 100 时 6 秒 = 10 拍，普通曲子不会被切分。",
+    "hotkeys": "用户明确要求不使用 F8 / F9。RegisterHotKey 会「吞掉」组合键，不会传给游戏；字母刻意避开口琴键位 z x c v b n m ,（万一注册失败，也不会因此误发一个音）。2026-09-25：Ctrl+Alt+L 被 QQ 占用 → 急停默认改为 Ctrl+Alt+K；设置页每个热键旁有「检测」按钮可当场验证是否被占用。",
     "midi.reference_note": "MIDI 音高 60（中央 C）映射到乐器基准音（z 键 = 中音 1）。导入时可用整体移调把曲子挪进音域。",
     "midi.reference_semitone": "上述 MIDI 音高对应的相对半音数，默认 0。"
   }

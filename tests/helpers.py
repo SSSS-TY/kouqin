@@ -29,7 +29,7 @@ PINNED_PLAYBACK: dict[str, object] = {
     "modifier_tail_ms": 10,
     "countdown_ms": 3000,
     "retrigger_long_notes": True,
-    "sustain_limit_ms": None,
+    "sustain_limit_ms": 6000,
 }
 
 PINNED_MIDI: dict[str, object] = {"reference_note": 60, "reference_semitone": 0}
@@ -53,7 +53,7 @@ def write_settings(
         "hotkeys": {
             "toggle_play": "Ctrl+Alt+P",
             "pause_resume": "Ctrl+Alt+U",
-            "panic_release": "Ctrl+Alt+L",
+            "panic_release": "Ctrl+Alt+K",
         },
         "midi": {**PINNED_MIDI, **(midi or {})},
     }
@@ -124,4 +124,3 @@ class FakeSender:
 @pytest.fixture
 def fake_sender() -> FakeSender:
     return FakeSender()
-

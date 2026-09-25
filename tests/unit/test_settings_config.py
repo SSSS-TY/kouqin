@@ -44,9 +44,12 @@ def test_playback_values_are_within_measured_bounds(config) -> None:
     assert isinstance(playback["retrigger_long_notes"], bool)
 
 
-def test_sustain_limit_stays_unmeasured_until_tested(config) -> None:
-    """P0-7 完成前，长音衰减上限必须保持 null（不得猜一个数值填进去）。"""
-    assert config["playback"]["sustain_limit_ms"] is None
+def test_sustain_limit_is_measured_and_documented(config) -> None:
+    """P0-7 已实测（2026-09-25：约 10 秒开始明显衰减）→ 填入正数且必须在说明里给出依据。"""
+    limit = config["playback"]["sustain_limit_ms"]
+    assert isinstance(limit, int) and limit > 0
+    note = config["notes"]["sustain_limit_ms"]
+    assert "P0-7" in note and "10 秒" in note
 
 
 def test_every_setting_is_explained(config) -> None:

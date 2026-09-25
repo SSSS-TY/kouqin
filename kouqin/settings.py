@@ -23,7 +23,7 @@ DEFAULT_PLAYBACK: dict[str, Any] = {
 DEFAULT_HOTKEYS: dict[str, str] = {
     "toggle_play": "Ctrl+Alt+P",
     "pause_resume": "Ctrl+Alt+U",
-    "panic_release": "Ctrl+Alt+L",
+    "panic_release": "Ctrl+Alt+K",
 }
 
 DEFAULT_MIDI: dict[str, Any] = {"reference_note": 60, "reference_semitone": 0}

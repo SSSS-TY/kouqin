@@ -66,6 +66,7 @@ class _Registration:
     hotkey_id: int
     combo: str
     callback: Callable[[], None]
+    hwnd: int          # 0 表示注册到「当前线程的消息队列」
 
 
 class HotkeyManager:
@@ -85,16 +86,19 @@ class HotkeyManager:
         self._hwnd = hwnd
         modifiers, vk = parse_combo(combo)
         self._next_id += 1
-        if not _user32.RegisterHotKey(wintypes.HWND(hwnd), self._next_id, modifiers, vk):
-            return False
-        self._registrations[self._next_id] = _Registration(self._next_id, combo, callback)
-        return True
+        if _user32.RegisterHotKey(wintypes.HWND(hwnd), self._next_id, modifiers, vk):
+            self._registrations[self._next_id] = _Registration(self._next_id, combo, callback, hwnd)
+            return True
+        # 回退：注册到调用线程的消息队列（Qt 会以 windows_dispatcher_MSG 形式交给原生事件过滤器）。
+        # 某些环境下窗口句柄不可用于热键注册（如无交互桌面），这条回退能让热键仍然可用。
+        if hwnd and _user32.RegisterHotKey(wintypes.HWND(None), self._next_id, modifiers, vk):
+            self._registrations[self._next_id] = _Registration(self._next_id, combo, callback, 0)
+            return True
+        return False
 
     def unregister_all(self) -> None:
-        if self._hwnd is None:
-            return
-        for hotkey_id in list(self._registrations):
-            _user32.UnregisterHotKey(wintypes.HWND(self._hwnd), hotkey_id)
+        for hotkey_id, registration in list(self._registrations.items()):
+            _user32.UnregisterHotKey(wintypes.HWND(registration.hwnd), hotkey_id)
             self._registrations.pop(hotkey_id, None)
 
     def handle_message(self, msg: int, wparam: int) -> bool:
@@ -107,3 +111,24 @@ class HotkeyManager:
         registration.callback()
         return True
 
+
+def probe(hwnd: int, combo: str) -> tuple[bool, str]:
+    """试注册一次并立刻注销，返回 `(是否可用, 说明)`。
+
+    占用时 Windows 返回 1409（热键已注册）；返回值带上原因，界面才能区分
+    「被别的程序占用」与「本环境无法注册」。
+    """
+    modifiers, vk = parse_combo(combo)
+    hotkey_id = 0x7FFE
+    ctypes.set_last_error(0)
+    if _user32.RegisterHotKey(wintypes.HWND(hwnd), hotkey_id, modifiers, vk):
+        _user32.UnregisterHotKey(wintypes.HWND(hwnd), hotkey_id)
+        return True, "可用"
+    code = ctypes.get_last_error()
+    if code == 1409:
+        return False, "已被其它程序占用"
+    # 再试一次线程队列（与 register 的回退一致）
+    if hwnd and _user32.RegisterHotKey(wintypes.HWND(None), hotkey_id, modifiers, vk):
+        _user32.UnregisterHotKey(wintypes.HWND(None), hotkey_id)
+        return True, "可用"
+    return False, f"无法注册（{ctypes.FormatError(code).strip() or code}）"

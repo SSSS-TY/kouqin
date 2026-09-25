@@ -84,23 +84,51 @@ class SettingsDialog(QtWidgets.QDialog):
 
     def _build_hotkey_tab(self) -> QtWidgets.QWidget:
         self.hotkey_edits: dict[str, QtWidgets.QLineEdit] = {}
+        self.hotkey_checks: dict[str, QtWidgets.QLabel] = {}
         labels = {
             "toggle_play": "开始 / 停止",
             "pause_resume": "暂停 / 继续",
             "panic_release": "急停（松开所有键）",
         }
-        form = QtWidgets.QFormLayout()
+        grid = QtWidgets.QGridLayout()
         for key, label in labels.items():
+            row = len(self.hotkey_edits)
             edit = QtWidgets.QLineEdit(self.settings.hotkeys.get(key, DEFAULT_HOTKEYS[key]))
             self.hotkey_edits[key] = edit
-            form.addRow(label, edit)
-        hint = QtWidgets.QLabel("形如 Ctrl+Alt+P。组合键会被系统吞掉，不会传给游戏。改完需重启程序生效。")
+            probe_button = QtWidgets.QPushButton("检测")
+            probe_button.clicked.connect(lambda _=False, k=key: self._probe_hotkey(k))
+            status = QtWidgets.QLabel("—")
+            self.hotkey_checks[key] = status
+            grid.addWidget(QtWidgets.QLabel(label), row, 0)
+            grid.addWidget(edit, row, 1)
+            grid.addWidget(probe_button, row, 2)
+            grid.addWidget(status, row, 3)
+        grid.setColumnStretch(1, 1)
+
+        hint = QtWidgets.QLabel(
+            "形如 Ctrl+Alt+P。组合键会被系统吞掉，不会传给游戏。改完需重启程序生效。\n"
+            "若某个键被别的程序（QQ、微信、录屏软件等）占用，注册会失败——点「检测」当场验证，"
+            "换一个字母即可（建议避开 F8/F9 与口琴键位 z x c v b n m ,）。"
+        )
         hint.setWordWrap(True)
         box = QtWidgets.QGroupBox("全局热键")
         inner = QtWidgets.QVBoxLayout(box)
-        inner.addLayout(form)
+        inner.addLayout(grid)
         inner.addWidget(hint)
         return box
+
+    def _probe_hotkey(self, key: str) -> None:
+        """试注册一次，当场告诉用户这个组合键能不能用。"""
+        from kouqin.hotkey.win32 import HotkeyError, probe
+
+        combo = self.hotkey_edits[key].text().strip()
+        label = self.hotkey_checks[key]
+        try:
+            available, reason = probe(int(self.winId()), combo)
+        except HotkeyError as exc:
+            label.setText(f"✗ {exc}")
+            return
+        label.setText(f"✓ {reason}" if available else f"✗ {reason}")
 
     def _build_keys_tab(self) -> QtWidgets.QWidget:
         self.keys_table = QtWidgets.QTableWidget(len(self.instrument_data["keys"]), 3)
