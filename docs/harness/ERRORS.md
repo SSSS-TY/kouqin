@@ -3,6 +3,7 @@
 | ID | 标题 | 状态 | 发现日期 | 解决日期 | 细节文件 |
 |----|------|------|----------|----------|----------|
 | ERR-001 | 在工作区执行 `git init` 导致沙盒环境刷新失败，全部命令无法启动 | Resolved | 2026-09-25 | 2026-09-25 | [details](errors/ERR-001.md) |
+| ERR-002 | `git push` 被 GitHub 以 GH007 拒绝（作者邮箱属于受保护的私有邮箱） | Unresolved | 2026-09-25 | - | [details](errors/ERR-002.md) |
 
 状态取值：`Unresolved` / `Resolved` / `WontFix` / `Closed`。
 
@@ -11,3 +12,5 @@
 - Agent **不得**在本工作区执行 `git init`（见 ERR-001）：由沙盒账户创建的 `.git` 会使环境刷新失败、
   命令工具完全不可用。
 - 需要版本控制时由用户在本地终端初始化；日常的 `git add/commit` 也由用户执行，Agent 只提供建议命令。
+- **邮箱口径**：GitHub 若开启 "Keep my email addresses private"，本地 `user.email` 必须同步改为
+  GitHub 给出的 noreply 地址，否则推送会被 GH007 拒绝（见 ERR-002）。
