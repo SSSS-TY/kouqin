@@ -1,5 +1,12 @@
 # Progress Tracker
 
+## 仓库
+
+- **远端**: <https://github.com/SSSS-TY/kouqin>（public，2026-09-25 建立）
+- **推送用 SSH**: `ssh://git@ssh.github.com:443/SSSS-TY/kouqin.git`（与 `ssj_yq` 同一套配置）
+- **分支**: `main`　**许可**: 个人非商业使用（`LICENSE`，见 ADR-004）
+- git 写操作一律由用户在本地终端执行（Agent 不执行 `git init/add/commit/push`，见 ERR-001）
+
 ## Current Status
 
 - **Active Task**: `口琴自动演奏宏 v1 —— Step 1 设计（P0 关键实验已完成，设计文档已按实测修订，等待 APPROVED）`
@@ -54,7 +61,7 @@
 
 1. [ ] **P0-7 长音衰减计时**（用户，B 机）—— 按住一个键，报「大约几秒开始明显变弱 / 几秒完全听不见」；据此填写 `sustain_limit_ms` - `est: 3m`
 2. [ ] **确认全局热键**（用户）—— `Ctrl+Alt+P`（开始/停止）、`Ctrl+Alt+U`（暂停/继续）、`Ctrl+Alt+L`（急停）是否可用 - `est: 1m`
-3. [ ] **建仓并首次推送**（用户本地执行）—— 见本轮回复中的命令；仓库设为 public，许可见 `LICENSE`（ADR-004） - `est: 5m`
+3. [ ] **确认首次推送** —— 远端 <https://github.com/SSSS-TY/kouqin> 已建立；确认 `git status --short` 干净、`git log --oneline -1` 有首个提交（若报错请把输出发回） - `est: 1m`
 4. [ ] **设计门禁** —— 用户回复 `APPROVED`（含确认 ADR-003 单进程路线与 Q4 移调/循环） - `est: 用户侧`
 5. [ ] Step 2 规格 —— 产出 `docs/design/SPEC.md`（曲谱 DSL、MIDI 导入、计划契约、UI 交互、热键与线程模型、验收标准） - `est: 1.5h` - `verify: 用户回复 SPEC_APPROVED`
 6. [ ] Step 3 测试计划 —— 产出 `docs/design/TEST_PLAN.md` - `est: 40m` - `verify: 用户回复 TEST_PLAN_APPROVED`
