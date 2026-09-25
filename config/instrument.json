@@ -1,0 +1,29 @@
+{
+  "version": 2,
+  "verified": true,
+  "verified_at": "2026-09-25",
+  "verified_note": "游戏内音阶标注（用户在游戏 UI 上读出每个键对应的简谱）+ Python SendInput 注入实测。左键=降一个八度（-12），中键=升半音（+1），右键=升一个八度（+12）；修饰键效果可叠加（左+中 = -11、右+中 = +13，均已实测）。",
+  "keys": [
+    { "key": "z", "degree": 1, "octave": 0 },
+    { "key": "x", "degree": 2, "octave": 0 },
+    { "key": "c", "degree": 3, "octave": 0 },
+    { "key": "v", "degree": 4, "octave": 0 },
+    { "key": "b", "degree": 5, "octave": 0 },
+    { "key": "n", "degree": 6, "octave": 0 },
+    { "key": "m", "degree": 7, "octave": 0 },
+    { "key": ",", "degree": 1, "octave": 1 }
+  ],
+  "modifiers": [
+    { "button": "left", "label": "降调（降一个八度）", "semitone": -12 },
+    { "button": "middle", "label": "半音（升半音）", "semitone": 1 },
+    { "button": "right", "label": "升调（升一个八度）", "semitone": 12 }
+  ],
+  "modifier_sets": [
+    { "buttons": [], "status": "verified", "note": "无修饰：中音区 1-7 与高音 1" },
+    { "buttons": ["left"], "status": "verified", "note": "降一个八度：低音 1-7 与中音 1" },
+    { "buttons": ["middle"], "status": "verified", "note": "升半音：基础键全部加 #" },
+    { "buttons": ["right"], "status": "verified", "note": "升一个八度：高音 1-7 与两点 1" },
+    { "buttons": ["left", "middle"], "status": "verified", "note": "低音区全部加 #（用户实测：在左键基础上所有音都带 #）" },
+    { "buttons": ["middle", "right"], "status": "verified", "note": "高音区全部加 #（用户实测：右键 + 中键同样生效）" }
+  ]
+}

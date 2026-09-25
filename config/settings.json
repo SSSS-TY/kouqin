@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "playback": {
+    "min_hold_ms": 40,
+    "note_gap_ms": 30,
+    "modifier_lead_ms": 10,
+    "modifier_tail_ms": 10,
+    "countdown_ms": 3000,
+    "retrigger_long_notes": true,
+    "sustain_limit_ms": null
+  },
+  "hotkeys": {
+    "toggle_play": "Ctrl+Alt+P",
+    "pause_resume": "Ctrl+Alt+U",
+    "panic_release": "Ctrl+Alt+L"
+  },
+  "notes": {
+    "min_hold_ms": "P0-3 实测 20 ms 即可听见，此处取 40 ms 留一倍余量；用真实曲谱回归时再校准。",
+    "note_gap_ms": "用户实测：正常手速连按**不吞音**（间隔约 120 ms 以上）。更快的重复音下限未测，暂取 30 ms 并由首曲回归复核。",
+    "modifier_lead_ms": "修饰键需先于按键按下。取值待首曲回归校准（当前为保守默认）。",
+    "modifier_tail_ms": "修饰键晚于按键松开。取值待首曲回归校准（当前为保守默认）。",
+    "countdown_ms": "切换回游戏所需的准备时间（U5 起始延迟未测，先取 3 秒）。",
+    "retrigger_long_notes": "长按会渐强→出现波浪感→衰减到消失（用户实测）。开启后，超长音会被切成若干段重新起音，避免后段听不见。",
+    "sustain_limit_ms": "**未测**（P0-7）：需要用户在游戏里计时「按住后大约几秒开始明显变弱 / 几秒完全消失」。为 null 时编译器不切分长音，如实按住。",
+    "hotkeys": "用户明确要求不使用 F8 / F9。RegisterHotKey 会「吞掉」组合键，不会传给游戏；字母也刻意避开口琴键位 z x c v b n m ,"
+  }
+}
+

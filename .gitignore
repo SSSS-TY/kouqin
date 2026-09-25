@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+
+# IDE
+.idea/
+.vscode/
+*.code-workspace
+
+# 运行时生成物（计划 / 控制 / 状态文件）
+runtime/*.json
+runtime/*.tmp
+
+# 本地临时文件
+*.log
+*.bak
+Thumbs.db
+desktop.ini
+

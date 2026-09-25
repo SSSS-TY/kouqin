@@ -1,0 +1,11 @@
+# 统一行尾为 LF。
+# 你的 core.autocrlf 是系统级 true（Git for Windows 默认），检出时会把文本文件写成 CRLF，
+# 与本工程当前全 LF 的状态不一致，会造成 diff 噪声与混合行尾；这里显式锁定 LF。
+* text=auto eol=lf
+
+# 二进制文件不参与行尾转换
+*.png binary
+*.jpg binary
+*.zip binary
+*.exe binary
+
