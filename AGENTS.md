@@ -220,7 +220,7 @@ Agent 执行任务时，按以下顺序解释约束：
 - **单个测试**：`python -m pytest tests/unit/<file>.py::<test_name> -q`
 - **语法检查**：`python -m compileall -q kouqin`
 - **静态检查**：`[待确认：尚未选定 linter，未选定前不新增]`
-- **本地启动 UI**：`python -m kouqin`（持续占用终端，**不得在主对话前台阻塞运行**）
+- **本地启动 UI**：`python -m kouqin`（不带子命令＝启动 PySide6 界面；持续占用终端，**不得在主对话前台阻塞运行**）
 - **本地 dry-run（不注入）**：`python -m kouqin dry-run scores\twinkle.kq`（打印事件序列，适合离线核对）
 - **游戏内演奏**：`python -m kouqin play scores\twinkle.kq`（倒计时后真实注入；持续占用终端，须由用户手动执行）
 - **环境自检**：`python -m kouqin check`（是否管理员、前台是否可注入）

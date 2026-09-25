@@ -9,10 +9,21 @@
 
 ## Current Status
 
-- **Active Task**: `口琴自动演奏宏 v1 —— Step 4 实现（M2 内核/曲谱/MIDI 与 M3 注入/播放引擎已完成，全部测试转绿；M4 界面待做）`
+- **Active Task**: `口琴自动演奏宏 v1 —— Step 4 实现完成（M2/M3/M4 全部就绪，142 测试全绿；剩余为 B 机实机验收项）`
 - **Task Type**: `Feature Development`
-- **Last Action**: `2026-09-25 - 实现 kouqin/core + kouqin/scores + kouqin/input + kouqin/player + CLI；python -m pytest -q → 138 passed（连跑两次无抖动）`
+- **Last Action**: `2026-09-25 - 完成 M4 图形界面（曲谱库/编辑器+预览/播放控制/设置/校准/全局热键）；python -m pytest -q → 142 passed`
 - **Blocked**: `否`
+
+## 实机验收记录
+
+| 日期 | 项目 | 结果 | 备注 |
+|------|------|------|------|
+| 2026-09-25 | MAN-01（小星星整曲） | ✅ 通过 | 用户反馈：旋律是小星星、无明显错音、节奏正常、长音正常。**该曲全为自然音，未覆盖鼠标修饰键路径** |
+| 2026-09-25 | MAN-02（升降音/八度） | ⏳ 待测 | 已提供 `scores/chromatic.kq`（37 音半音阶，覆盖 6 种修饰组合），等 B 机实测 |
+| 2026-09-25 | MAN-04（停止/急停） | ⏳ 待测 | 命令行下可测 Ctrl+C 急停 |
+
+**长音观测（顺带得到的数据）**：小星星的长音为 2 拍（tempo 100 → 1.2 秒），用户反馈听感正常；
+更长的音（≥ 4 秒）仍未验证，`sustain_limit_ms` 继续留 `null`（P0-7 未做）。
 
 ## 背景（2026-09-25 用户需求）
 
@@ -64,9 +75,15 @@
 3. [x] **门禁二 `CONTINUE`** —— 用户批准（2026-09-25）
 4. [x] **M2 内核与曲谱** —— `kouqin/core`（score/pitch/instrument/compile）+ `kouqin/scores`（kq/json_score/midi）+ `kouqin/settings.py`；A1–A10、A13 的自动化测试全绿
 5. [x] **M3 注入与播放引擎** —— `kouqin/input/win32.py`（SendInput 扫描码 + release_all）+ `kouqin/player/engine.py`（专用线程、暂停/停止/急停、循环、进度回调）；另有 CLI 作为实测通道
-6. [ ] **M4 界面** —— PySide6：曲谱库、编辑/预览、导入/导出、播放控制、设置、校准、全局热键 - `est: 3h` - `verify: A14 + MAN-05/MAN-06 + UI 冒烟`
-7. [ ] **游戏内验收 MAN-01…MAN-07**（用户，B 机）—— 现已可用 `python -m kouqin play scores\twinkle.kq` 先做 MAN-01/02/04 - `est: 20m`
+6. [x] **M4 界面** —— `kouqin/ui/{main_window,preview,dialogs}.py` + `kouqin/hotkey/win32.py` + `kouqin/scores/library.py`：曲谱库、编辑器与实时报错、音符预览、播放控制条、设置（播放参数/热键/键位表）、校准（试拍 + 回填）、全局热键
+    - **验证**: 3 条 UI 冒烟测试通过（能加载曲谱并编译、未校准时禁用播放、错误谱面报 KQ004）；`python -m pytest -q` → 142 passed
+7. [ ] **游戏内验收（用户，B 机）** —— 剩余三项：
+    - MAN-03 长音（依赖 P0-7 的数值）
+    - MAN-04 界面上的停止/急停（`Ctrl+Alt+L`）
+    - MAN-07 全局热键 `Ctrl+Alt+P` / `Ctrl+Alt+U` 在游戏内是否生效且不触发游戏动作
+    - MAN-05（未校准保护）与 MAN-06（错误行标红）已由 UI 冒烟测试覆盖代码路径，仍建议在 B 机目视确认一次
 8. [ ] **P0-7 长音衰减计时**（用户，B 机，不阻塞）—— `python tools\p0_sendinput_demo.py sustain`；据此填写 `sustain_limit_ms` - `est: 3m`
+9. [ ] **（可选）界面便携化** —— 若 B 机不方便装 PySide6，评估用便携包随附（待用户决定）
 
 ## Suspended Tasks
 
@@ -154,6 +171,16 @@
 - ✅ [2026-09-25] **CLI 实测通道**：`python -m kouqin {dry-run,play,check}` + 首支曲谱 `scores/twinkle.kq`（小星星）
   - **验证**: `check` 正常输出；`dry-run scores\twinkle.kq` → 42 音 / 84 事件 / 28.77 秒；`dry-run tests\fixtures\midi\sample_multi.mid` 正常；错误路径 `bad_tie.kq` → 退出码 2 + KQ008 提示
   - **全量验证**: `python -m pytest -q` → **138 passed**（连续两次，无抖动）；`python -m compileall -q kouqin tools tests` → 0
+- ✅ [2026-09-25] **B 机拷贝清单随实现更新**：`tools/make_bundle.py` 改为「目录级拷贝」（整个 `kouqin` 包 + `config` + `scores` + LICENSE + P0 工具），新增 `--with-tests`
+  - **产物**: 24 个文件 / 94.4 KB；`--zip` → 42.7 KB
+  - **独立性验证**: 拷到独立目录后用 `python -S`（关闭 site-packages）运行 `python -m kouqin dry-run scores\twinkle.kq` 成功 → 证明**无任何第三方依赖**；从子目录运行亦正常（CLI 增加了配置路径回退）
+  - **文档**: `docs/RUN_ON_B.md` 重写（不再需要 AutoHotkey / PySide6；列出新拷贝清单与 `check`→`dry-run`→`play` 步骤）
+  - **验证**: `python -m pytest -q tests/unit/test_make_bundle.py` → 7 passed
+- ✅ [2026-09-25] **MAN-02 实机通过**（用户，B 机）：`scores/chromatic.kq`（37 音半音阶）运行正常、听感无问题
+  - **含义**: 至此「解析 → 音高映射（含 6 种修饰组合）→ 编译 → SendInput 注入 → 游戏发声」全链路在真实游戏里验证通过
+- ✅ [2026-09-25] **M4 图形界面完成**：`kouqin/ui/main_window.py`（三区布局、菜单、播放控制、进度、状态栏）、`preview.py`（音符条形图 + 不可达标红 + 当前音高亮）、`dialogs.py`（设置：播放参数/热键/键位表；校准：逐组合试拍 + 回填半音数 + 写入 verified）、`kouqin/hotkey/win32.py`（RegisterHotKey + WM_HOTKEY 原生事件过滤）、`kouqin/scores/library.py`（曲谱库扫描与可达性标记）
+  - **修复**: UI 冒烟测试抓出「构造函数里只启动防抖定时器、未同步解析」导致按钮状态陈旧的 bug → 显式操作改为立即解析
+  - **验证**: `python -m pytest -q` → **142 passed**（新增 3 条 UI 冒烟测试）；`python -m compileall -q kouqin tools tests` → 0；打包后 `kouqin` 包 24 个文件全部随行（zip 58.1 KB）
 
 ## Archive
 

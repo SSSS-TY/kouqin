@@ -30,6 +30,17 @@ DEFAULT_INSTRUMENT = "config/instrument.json"
 DEFAULT_SETTINGS = "config/settings.json"
 
 
+def default_path(relative: str) -> str:
+    """优先用当前目录下的相对路径；不存在则回退到「包所在仓库根」下的同名路径。
+
+    这样无论在哪个目录执行 `python -m kouqin …`，都能找到随包一起拷过去的配置。
+    """
+    if Path(relative).exists():
+        return relative
+    fallback = Path(__file__).resolve().parent.parent / relative
+    return str(fallback) if fallback.exists() else relative
+
+
 def load_score(path: Path, settings):
     """按扩展名选择解析器。"""
     suffix = path.suffix.lower()
@@ -129,8 +140,8 @@ def build_parser() -> argparse.ArgumentParser:
         item.add_argument("score", help="曲谱文件（.kq / .kq.json / .mid）")
         item.add_argument("--transpose", type=int, default=None, help="覆盖曲谱里的整体移调（半音）")
         item.add_argument("--speed", type=float, default=1.0, help="播放速度倍率（默认 1.0）")
-        item.add_argument("--instrument", default=DEFAULT_INSTRUMENT, help="乐器配置路径")
-        item.add_argument("--settings", default=DEFAULT_SETTINGS, help="播放设置路径")
+        item.add_argument("--instrument", default=None, help="乐器配置路径")
+        item.add_argument("--settings", default=None, help="播放设置路径")
         if name == "dry-run":
             item.add_argument("--limit", type=int, default=40, help="最多打印多少个事件（默认 40）")
         else:
@@ -142,6 +153,11 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    if args.command in {"dry-run", "play"}:
+        if args.instrument is None:
+            args.instrument = default_path(DEFAULT_INSTRUMENT)
+        if args.settings is None:
+            args.settings = default_path(DEFAULT_SETTINGS)
     try:
         if args.command == "dry-run":
             return cmd_dry_run(args)
@@ -160,4 +176,3 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

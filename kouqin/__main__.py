@@ -1,12 +1,37 @@
 """`python -m kouqin` 入口。
 
-图形界面（M4）尚未实现；当前提供命令行模式。给定子命令时走 `kouqin.cli`，
-不带参数时打印用法提示。
+不带参数 → 启动图形界面；带子命令 → 走命令行（`kouqin.cli`）。
 """
 
 from __future__ import annotations
 
 import sys
+from pathlib import Path
+
+USAGE = (
+    "口琴自动演奏宏\n\n"
+    "  python -m kouqin                              # 启动图形界面\n"
+    "  python -m kouqin dry-run scores/twinkle.kq    # 打印事件序列（不注入）\n"
+    "  python -m kouqin play    scores/twinkle.kq    # 倒计时后真实演奏\n"
+    "  python -m kouqin check                        # 环境自检\n"
+)
+
+
+def run_gui() -> int:
+    """启动 PySide6 界面（需要 PySide6）。"""
+    try:
+        from PySide6 import QtWidgets
+    except ImportError:
+        print("未安装 PySide6，无法启动图形界面。\n\n" + USAGE, file=sys.stderr)
+        return 1
+
+    from kouqin.ui.main_window import MainWindow
+
+    root = Path(__file__).resolve().parent.parent
+    app = QtWidgets.QApplication(sys.argv)
+    window = MainWindow(config_dir=root / "config", scores_dir=root / "scores")
+    window.show()
+    return app.exec()
 
 
 def main() -> int:
@@ -14,17 +39,8 @@ def main() -> int:
         from kouqin.cli import main as cli_main
 
         return cli_main()
-    print(
-        "口琴自动演奏宏（图形界面将在 M4 提供）\n\n"
-        "当前可用：\n"
-        "  python -m kouqin dry-run scores/twinkle.kq   # 打印事件序列（不注入）\n"
-        "  python -m kouqin play    scores/twinkle.kq   # 倒计时后真实演奏\n"
-        "  python -m kouqin check                       # 环境自检\n",
-        file=sys.stderr,
-    )
-    return 1
+    return run_gui()
 
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
