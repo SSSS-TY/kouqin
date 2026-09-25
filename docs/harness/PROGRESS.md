@@ -9,10 +9,10 @@
 
 ## Current Status
 
-- **Active Task**: `口琴自动演奏宏 v1 —— Step 3 测试（测试已写完，处于预期的「红」状态，等待门禁二 CONTINUE）`
+- **Active Task**: `口琴自动演奏宏 v1 —— Step 4 实现（M2 内核/曲谱/MIDI 与 M3 注入/播放引擎已完成，全部测试转绿；M4 界面待做）`
 - **Task Type**: `Feature Development`
-- **Last Action**: `2026-09-25 - TEST_PLAN_APPROVED；E1–E4 并入 SPEC（v1.1）；建立 19 个样例素材（含 7 个 .mid）与 80 个测试函数；确认红例`
-- **Blocked**: `是：等待门禁二 CONTINUE（测试已就绪，目标模块尚未实现）`
+- **Last Action**: `2026-09-25 - 实现 kouqin/core + kouqin/scores + kouqin/input + kouqin/player + CLI；python -m pytest -q → 138 passed（连跑两次无抖动）`
+- **Blocked**: `否`
 
 ## 背景（2026-09-25 用户需求）
 
@@ -61,9 +61,12 @@
 
 1. [x] **门禁一 `TEST_PLAN_APPROVED`** —— 用户批准（2026-09-25），并确认规格勘误 E1–E4
 2. [x] **编写测试（红例）** —— 19 个样例素材 + 80 个测试函数；`python -m pytest -q` 因 `No module named 'kouqin'` 收集失败（预期红），已有 37 个测试仍全绿
-3. [ ] **门禁二 `CONTINUE`** —— 等用户确认后进入实现 - `est: 用户侧`
-4. [ ] Step 4 实现 —— M2 内核/曲谱/MIDI → M3 注入与播放引擎 → M4 界面 - `est: 待评估` - `verify: `python -m pytest -q` 全绿 + MAN-01…MAN-07`
-5. [ ] **P0-7 长音衰减计时**（用户，B 机，不阻塞）—— `python tools\p0_sendinput_demo.py sustain`；据此填写 `sustain_limit_ms` - `est: 3m`
+3. [x] **门禁二 `CONTINUE`** —— 用户批准（2026-09-25）
+4. [x] **M2 内核与曲谱** —— `kouqin/core`（score/pitch/instrument/compile）+ `kouqin/scores`（kq/json_score/midi）+ `kouqin/settings.py`；A1–A10、A13 的自动化测试全绿
+5. [x] **M3 注入与播放引擎** —— `kouqin/input/win32.py`（SendInput 扫描码 + release_all）+ `kouqin/player/engine.py`（专用线程、暂停/停止/急停、循环、进度回调）；另有 CLI 作为实测通道
+6. [ ] **M4 界面** —— PySide6：曲谱库、编辑/预览、导入/导出、播放控制、设置、校准、全局热键 - `est: 3h` - `verify: A14 + MAN-05/MAN-06 + UI 冒烟`
+7. [ ] **游戏内验收 MAN-01…MAN-07**（用户，B 机）—— 现已可用 `python -m kouqin play scores\twinkle.kq` 先做 MAN-01/02/04 - `est: 20m`
+8. [ ] **P0-7 长音衰减计时**（用户，B 机，不阻塞）—— `python tools\p0_sendinput_demo.py sustain`；据此填写 `sustain_limit_ms` - `est: 3m`
 
 ## Suspended Tasks
 
@@ -142,6 +145,15 @@
   - **测试期新增两条规范补充**：E5（负时间整体平移 + `offset_ms`）、E6（换修饰时序模型 = 相同组合不重按；最小间隔 `lead+tail`）；已并入 SPEC §5.4 与 §13，并在 TEST_PLAN §11 列出实现必须满足的接口细节（T1–T13、S1–S3）
   - **验证**: `python -m pytest -q` → 8 个文件以 `ModuleNotFoundError: No module named 'kouqin'` 收集失败（**预期的红**）；`python -m pytest -q tests/unit/test_{instrument_config,settings_config,p0_sendinput_demo,make_bundle}.py` → **37 passed**（既有测试未受影响）
   - **Commit**: `未提交（用户本地执行）`
+- ✅ [2026-09-25] **门禁二 `CONTINUE`**（用户批准）
+- ✅ [2026-09-25] **M2 内核与曲谱实现**：`kouqin/core/{score,pitch,instrument,compile}.py`、`kouqin/scores/{kq,json_score,midi}.py`、`kouqin/settings.py`
+  - 编译实现含勘误 E1–E7；额外发现并修复「逐音独立取整导致 1 ms 重叠」（改为强制首尾相接）
+  - **验证**: A1–A10、A13 的用例全绿（含 golden 计划逐事件比对、MIDI 三轨合并/打击轨忽略/和弦丢弃、随机不变量 5×40 首）
+- ✅ [2026-09-25] **M3 注入与播放引擎实现**：`kouqin/input/win32.py`（扫描码 SendInput + `release_all` + 权限自检）、`kouqin/player/engine.py`（专用线程、2 ms 轮询响应暂停/停止/急停、循环、进度回调、异常路径强制释放）
+  - **验证**: E-01…E-09 全绿（含急停 ≤100 ms、注入异常后状态为 error 且已释放、暂停期间零事件）
+- ✅ [2026-09-25] **CLI 实测通道**：`python -m kouqin {dry-run,play,check}` + 首支曲谱 `scores/twinkle.kq`（小星星）
+  - **验证**: `check` 正常输出；`dry-run scores\twinkle.kq` → 42 音 / 84 事件 / 28.77 秒；`dry-run tests\fixtures\midi\sample_multi.mid` 正常；错误路径 `bad_tie.kq` → 退出码 2 + KQ008 提示
+  - **全量验证**: `python -m pytest -q` → **138 passed**（连续两次，无抖动）；`python -m compileall -q kouqin tools tests` → 0
 
 ## Archive
 

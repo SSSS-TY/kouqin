@@ -141,7 +141,7 @@ def test_c09_insufficient_switch_time_shifts_note_and_warns(tmp_path: Path, inst
 
 def test_c10_tie_merges_into_single_hold(tmp_path: Path, instrument) -> None:
     # 两个 1 拍的 1（tempo 100 → 各 600 ms），连音后 hold = max(1, min(1200, max(1170, 40))) = 1170
-    plan = compile_text("@tempo 100\n\n1 1~", tmp_path, instrument)
+    plan = compile_text("@tempo 100\n\n1 ~1", tmp_path, instrument)
     assert sequence(plan) == [("key_down", "z"), ("key_up", "z")]
     assert times(plan) == [0, 1170]
 

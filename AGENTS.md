@@ -221,6 +221,9 @@ Agent 执行任务时，按以下顺序解释约束：
 - **语法检查**：`python -m compileall -q kouqin`
 - **静态检查**：`[待确认：尚未选定 linter，未选定前不新增]`
 - **本地启动 UI**：`python -m kouqin`（持续占用终端，**不得在主对话前台阻塞运行**）
+- **本地 dry-run（不注入）**：`python -m kouqin dry-run scores\twinkle.kq`（打印事件序列，适合离线核对）
+- **游戏内演奏**：`python -m kouqin play scores\twinkle.kq`（倒计时后真实注入；持续占用终端，须由用户手动执行）
+- **环境自检**：`python -m kouqin check`（是否管理员、前台是否可注入）
 - **注入实验工具**：`python tools\p0_sendinput_demo.py --dry-run scale`（`--help` 列出 `check`/`scale`/`hold-sweep`/`sustain`/`compare`/`mouse`）
 - **P0-7 长音衰减测量**：`python tools\p0_sendinput_demo.py sustain`（依次按住 2/4/6/8/10/12 秒，报「第几段开始末尾明显变小」）
 - **打包到游戏机 B**：`python tools\make_bundle.py --zip`（清单见 `docs/RUN_ON_B.md`）
@@ -242,7 +245,8 @@ Agent 执行任务时，按以下顺序解释约束：
 
 ### 5.3 关键入口和核心模块（Step 4 目标结构）
 
-- `kouqin/__main__.py`：界面启动入口
+- `kouqin/__main__.py`：入口（有子命令时转 `kouqin.cli`，无参数时为界面）
+- `kouqin/cli.py`：命令行入口（`dry-run` / `play` / `check`），图形界面完成前的实测通道
 - `kouqin/core/`：纯领域逻辑（音高/音级、音高映射、曲谱模型、演奏计划编译），**不依赖 Qt、不依赖系统输入**
 - `kouqin/scores/`：曲谱读写（文本简谱 DSL、JSON）、曲谱库索引
 - `kouqin/ui/`：PySide6 界面（曲谱库、编辑预览、播放控制、设置、校准）

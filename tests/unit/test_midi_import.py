@@ -73,8 +73,8 @@ def test_m06_tick_to_beat_uses_division() -> None:
 
 
 def test_m07_reference_note_shifts_everything() -> None:
-    base = import_fixture("sample_multi.mid")
-    shifted = import_fixture("sample_multi.mid", reference_note=62)
+    base = import_fixture("sample_format0.mid")
+    shifted = import_fixture("sample_format0.mid", reference_note=62)
     assert [n.pitch for n in shifted.score.notes] == [p - 2 for p in (n.pitch for n in base.score.notes)]
 
 
@@ -99,4 +99,3 @@ def test_m09_out_of_range_reports_md005_with_transpose_hint() -> None:
     issue = excinfo.value.issues[0]
     assert issue.code == "MD005"
     assert "移调" in issue.message
-

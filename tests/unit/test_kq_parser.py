@@ -102,7 +102,7 @@ def test_k12_advanced_fixture_every_note() -> None:
 
 
 def test_k13_tie_flag_on_same_pitch() -> None:
-    notes = parse_kq("1 1~").notes
+    notes = parse_kq("1 ~1").notes
     assert notes[0].tie is False
     assert notes[1].tie is True
 
