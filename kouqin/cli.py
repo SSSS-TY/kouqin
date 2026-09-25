@@ -89,7 +89,7 @@ def cmd_dry_run(args) -> int:
 
 
 def cmd_play(args) -> int:
-    from kouqin.input.win32 import InputSender, is_elevated
+    from kouqin.input.win32 import FocusGuard, InputSender, is_elevated
     from kouqin.player.engine import Player
 
     score, plan, _, settings = build_plan(args)
@@ -100,10 +100,12 @@ def cmd_play(args) -> int:
     print(f"{countdown:.0f} 秒后开始 —— 请立刻切回游戏窗口" + ("（当前未以管理员运行，若游戏是管理员需同样提权）" if not is_elevated() else ""))
 
     sender = InputSender()
+    guard = FocusGuard() if settings.playback.get("pause_when_unfocused", True) else None
     player = Player(
         plan,
         sender=sender,
         countdown_ms=int(countdown * 1000),
+        focus_guard=guard,
         on_state=lambda state: print(f"  [状态] {state}"),
         on_progress=lambda index, total: print(f"  [进度] {index + 1}/{total}", end="\r"),
     )
@@ -119,15 +121,32 @@ def cmd_play(args) -> int:
     if player.last_error:
         print(f"  注入失败：{player.last_error}", file=sys.stderr)
         return 3
+    if player.last_message:
+        print(f"  {player.last_message}", file=sys.stderr)
     return 0
 
 
 def cmd_check(_args) -> int:
-    from kouqin.input.win32 import is_elevated, is_injectable
+    from kouqin.input.win32 import (
+        current_process_id,
+        foreground_window,
+        is_elevated,
+        is_injectable,
+        window_class,
+        window_pid,
+        window_title,
+    )
 
     print(f"  Python      : {sys.version.split()[0]} ({sys.executable})")
     print(f"  管理员运行  : {'是' if is_elevated() else '否'}")
     print(f"  可注入前台  : {'是' if is_injectable() else '否（前台窗口属更高权限进程，请以管理员运行本程序）'}")
+    hwnd = foreground_window()
+    pid = window_pid(hwnd)
+    own = current_process_id()
+    print(f"  前台窗口    : {window_title(hwnd) or '（取不到标题）'}")
+    print(f"  窗口类      : {window_class(hwnd) or '（取不到）'}")
+    print(f"  归属进程    : pid={pid}" + ("（就是本程序）" if pid == own else "（其它程序）"))
+    print("  说明：焦点守卫以「开始播放时的前台窗口」为目标；若此时前台是本程序或终端，开始会被拒绝。")
     return 0
 
 

@@ -16,8 +16,10 @@ DEFAULT_PLAYBACK: dict[str, Any] = {
     "modifier_lead_ms": 10,
     "modifier_tail_ms": 10,
     "countdown_ms": 3000,
-    "retrigger_long_notes": True,
-    "sustain_limit_ms": None,
+    "retrigger_long_notes": False,
+    "sustain_limit_ms": 8000,
+    "retrigger_gap_ms": 12,
+    "pause_when_unfocused": True,
 }
 
 DEFAULT_HOTKEYS: dict[str, str] = {

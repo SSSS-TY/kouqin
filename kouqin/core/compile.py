@@ -137,6 +137,7 @@ def compile_plan(
     """把曲谱编译成演奏计划；失败时抛 `PlanError`。"""
     params = dict(settings.playback)
     gap = int(params["note_gap_ms"])
+    retrigger_gap = int(params.get("retrigger_gap_ms", gap))
     min_hold = int(params["min_hold_ms"])
     lead = int(params["modifier_lead_ms"])
     tail = int(params["modifier_tail_ms"])
@@ -215,7 +216,9 @@ def compile_plan(
     # ── 3) 长音切分 → 段列表 ────────────────────────────────────────────
     segments: list[tuple[int, int, Fingering, int]] = []  # (start, hold, fingering, note_index)
     for index, entry in enumerate(playable):
-        for seg_start, seg_hold in _split_segments(entry.start_ms, entry.hold_ms, sustain, retrigger, gap):
+        for seg_start, seg_hold in _split_segments(
+            entry.start_ms, entry.hold_ms, sustain, retrigger, retrigger_gap
+        ):
             segments.append((seg_start, seg_hold, entry.fingering, index))
 
     # ── 4) 修饰键状态机 + 事件生成（SPEC §5.4-3/4，勘误 E5/E6）──────────

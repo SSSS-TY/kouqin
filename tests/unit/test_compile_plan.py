@@ -79,10 +79,13 @@ def test_c03_transpose_shifts_pitch_and_reassigns_fingering(tmp_path: Path, inst
 
 def test_c04_long_note_is_split_within_its_own_duration(tmp_path: Path, instrument) -> None:
     # 5 拍 @ tempo 100 = 3000 ms；hold = max(1, min(3000, max(2970, 40))) = 2970
-    # n = ceil((2970 + 30) / (2000 + 30)) = 2；每段 = (2970 − 30) / 2 = 1470
-    plan = compile_text("@tempo 100\n\n1----", tmp_path, instrument, sustain_limit_ms=2000)
+    # 段间间隔取 retrigger_gap_ms = 12：
+    #   n = ceil((2970 + 12) / (2000 + 12)) = 2；每段 = (2970 − 12) / 2 = 1479
+    plan = compile_text(
+        "@tempo 100\n\n1----", tmp_path, instrument, sustain_limit_ms=2000, retrigger_long_notes=True
+    )
     assert sequence(plan) == [("key_down", "z"), ("key_up", "z"), ("key_down", "z"), ("key_up", "z")]
-    assert times(plan) == [0, 1470, 1500, 2970]
+    assert times(plan) == [0, 1479, 1491, 2970]
     for down, up in zip(times(plan)[::2], times(plan)[1::2]):
         assert up - down <= 2000
 
@@ -94,7 +97,7 @@ def test_c05_sustain_unknown_keeps_single_hold(tmp_path: Path, instrument) -> No
 
 
 def test_c05b_note_shorter_than_limit_is_not_split(tmp_path: Path, instrument) -> None:
-    """实测上限 6 秒：2970 ms 的普通长音不应被切分（保证重触发只在极长音上生效）。"""
+    """实测上限 8 秒：2970 ms 的普通长音不应被切分（保证重触发只在极长音上生效）。"""
     plan = compile_text("@tempo 100\n\n1----", tmp_path, instrument)
     assert times(plan) == [0, 2970]
 

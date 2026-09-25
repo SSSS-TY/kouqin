@@ -6,8 +6,10 @@
     "modifier_lead_ms": 10,
     "modifier_tail_ms": 10,
     "countdown_ms": 3000,
-    "retrigger_long_notes": true,
-    "sustain_limit_ms": 6000
+    "retrigger_long_notes": false,
+    "sustain_limit_ms": 8000,
+    "retrigger_gap_ms": 12,
+    "pause_when_unfocused": true
   },
   "hotkeys": {
     "toggle_play": "Ctrl+Alt+P",
@@ -24,8 +26,10 @@
     "modifier_lead_ms": "修饰键需先于按键按下。取值待首曲回归校准（当前为保守默认）。",
     "modifier_tail_ms": "修饰键晚于按键松开。取值待首曲回归校准（当前为保守默认）。",
     "countdown_ms": "切换回游戏所需的准备时间（U5 起始延迟未测，先取 3 秒）。",
-    "retrigger_long_notes": "长按会渐强→出现波浪感→衰减到消失（用户实测）。开启后，超长音会被切成若干段重新起音，避免后段听不见。",
-    "sustain_limit_ms": "P0-7 实测（2026-09-25）：按住 2/4/6/8/10 秒均正常；**第 6 段（12 秒）约到 10 秒时声音明显变小、并很快听不见**（此时游戏内仍显示按键被按住）。取 6 秒作为重触发间隔，留 4 秒余量；tempo 100 时 6 秒 = 10 拍，普通曲子不会被切分。",
+    "retrigger_long_notes": "**默认关闭**（2026-09-25 用户实测结论）：长音本身随时间变化（渐强→波浪感），中途「松开再按」的接缝必然可闻，听感上比自然衰减更突兀。所以默认接受自然衰减；仅在确有超长音需求时打开。开启后编译器会把超过 sustain_limit_ms 的音切成若干段重新起音。",
+    "sustain_limit_ms": "P0-7 实测（2026-09-25）：按住 2/4/6/8/10 秒均正常；**第 6 段（12 秒）约到 10 秒时明显变小、很快听不见**（此时游戏内仍显示按键被按住）。用户反馈 6 秒重触发的接缝较明显 → 放宽到 **8 秒**（离衰减点留 2 秒余量），并新增更短的段间间隔；tempo 100 时 8 秒 = 13 拍，普通曲子不会被切分。",
+    "retrigger_gap_ms": "长音重触发时「松开再按」的间隔。比 note_gap_ms 更短（12 ms）是为了让重新起音的接缝尽量不显眼——用户 2026-09-25 反馈 30 ms 时接缝可闻。",
+    "pause_when_unfocused": "焦点守卫开关：演奏期间若前台窗口不再是「开始时的那个窗口」（例如用户 Alt+Tab 或按 Win 键离开游戏），立即停止并释放所有按键，避免把 z/x/c 之类的按键打进别的程序。",
     "hotkeys": "用户明确要求不使用 F8 / F9。RegisterHotKey 会「吞掉」组合键，不会传给游戏；字母刻意避开口琴键位 z x c v b n m ,（万一注册失败，也不会因此误发一个音）。2026-09-25：Ctrl+Alt+L 被 QQ 占用 → 急停默认改为 Ctrl+Alt+K；设置页每个热键旁有「检测」按钮可当场验证是否被占用。",
     "midi.reference_note": "MIDI 音高 60（中央 C）映射到乐器基准音（z 键 = 中音 1）。导入时可用整体移调把曲子挪进音域。",
     "midi.reference_semitone": "上述 MIDI 音高对应的相对半音数，默认 0。"

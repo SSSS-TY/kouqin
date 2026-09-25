@@ -83,6 +83,16 @@ class INPUT(ctypes.Structure):
 _user32 = ctypes.WinDLL("user32", use_last_error=True)
 _user32.SendInput.argtypes = (wintypes.UINT, ctypes.POINTER(INPUT), ctypes.c_int)
 _user32.SendInput.restype = wintypes.UINT
+# 下面这几个必须显式声明签名：64 位下句柄是 64 位，若不声明 restype，
+# ctypes 会按 32 位 int 处理并截断句柄，进而拿不到窗口的进程号。
+_user32.GetForegroundWindow.argtypes = ()
+_user32.GetForegroundWindow.restype = wintypes.HWND
+_user32.GetWindowThreadProcessId.argtypes = (wintypes.HWND, ctypes.POINTER(wintypes.DWORD))
+_user32.GetWindowThreadProcessId.restype = wintypes.DWORD
+_user32.GetWindowTextW.argtypes = (wintypes.HWND, wintypes.LPWSTR, ctypes.c_int)
+_user32.GetWindowTextW.restype = ctypes.c_int
+_user32.GetClassNameW.argtypes = (wintypes.HWND, wintypes.LPWSTR, ctypes.c_int)
+_user32.GetClassNameW.restype = ctypes.c_int
 
 
 # ── 动作与注入 ────────────────────────────────────────────────────────────────
@@ -184,3 +194,101 @@ def is_injectable() -> bool:
     except Exception:  # noqa: BLE001 —— 诊断失败不应影响功能
         return True
 
+
+# ── 前台窗口（焦点守卫）──────────────────────────────────────────────────────
+
+
+def foreground_window() -> int:
+    """当前前台窗口句柄（0 表示没有）。"""
+    return int(_user32.GetForegroundWindow() or 0)
+
+
+def window_pid(hwnd: int) -> int:
+    """窗口所属的进程号（取不到时返回 0）。"""
+    if not hwnd:
+        return 0
+    pid = wintypes.DWORD()
+    _user32.GetWindowThreadProcessId(wintypes.HWND(hwnd), ctypes.byref(pid))
+    return int(pid.value)
+
+
+def window_title(hwnd: int) -> str:
+    """窗口标题（用于日志与提示）。"""
+    if not hwnd:
+        return ""
+    buffer = ctypes.create_unicode_buffer(256)
+    _user32.GetWindowTextW(wintypes.HWND(hwnd), buffer, 256)
+    return buffer.value
+
+
+def window_class(hwnd: int) -> str:
+    """窗口类名（用于识别终端窗口）。"""
+    if not hwnd:
+        return ""
+    buffer = ctypes.create_unicode_buffer(256)
+    _user32.GetClassNameW(wintypes.HWND(hwnd), buffer, 256)
+    return buffer.value
+
+
+def current_process_id() -> int:
+    return int(ctypes.windll.kernel32.GetCurrentProcessId())
+
+
+class FocusGuard:
+    """确保按键只发给「开始播放时处于前台的窗口」。
+
+    游戏演奏场景下这是安全底线：一旦用户 Alt+Tab 或按 Win 键离开游戏，
+    继续注入就会把 `z x c v` 之类的按键打进别的程序（聊天窗口、编辑器……）。
+    """
+
+    #: 终端/控制台窗口类名：把按键打进去只会得到一堆乱码，直接拒绝
+    CONSOLE_CLASSES = frozenset(
+        {"ConsoleWindowClass", "CASCADIA_HOSTING_WINDOW_CLASS", "mintty", "PseudoConsoleWindow"}
+    )
+
+    def __init__(self) -> None:
+        self.target: int = 0
+        self.target_title: str = ""
+
+    def capture(self) -> str | None:
+        """记录目标窗口。成功返回 `None`；失败返回给用户看的原因。
+
+        拒绝的三种情况：前台是本程序自身、前台是终端窗口、取不到窗口信息。
+        """
+        hwnd = foreground_window()
+        if not hwnd:
+            self.target = 0
+            return "拿不到前台窗口信息。"
+        pid = window_pid(hwnd)
+        if pid == 0:
+            # 取不到进程号时宁可拒绝：否则会把本程序自己的窗口当成目标窗口，
+            # 表现为「一切回游戏就报焦点离开」。
+            self.target = 0
+            return "拿不到前台窗口的进程信息。"
+        if pid == current_process_id():
+            self.target = 0
+            return "当前前台窗口是本程序，按键会打到本程序上。"
+        if window_class(hwnd) in self.CONSOLE_CLASSES:
+            self.target = 0
+            return "当前前台窗口是终端，按键会打到终端里。"
+        self.target = hwnd
+        self.target_title = window_title(hwnd)
+        return None
+
+    def ok(self) -> bool:
+        """目标窗口是否仍是前台窗口。
+
+        **尚未捕获目标窗口时返回 True（不拦截）**——倒计时阶段就是这种情况：
+        那时还没锁定目标，若在这里返回 False，倒计时会被立刻中止，表现为「点了开始没反应」。
+        """
+        if not self.target:
+            return True
+        return foreground_window() == self.target
+
+    def describe_mismatch(self) -> str:
+        """焦点不在目标窗口时给出可诊断的说明（目标窗口 vs 当前前台）。"""
+        current = foreground_window()
+        return (
+            f"目标窗口：{self.target_title or self.target}；"
+            f"当前前台：{window_title(current) or current}"
+        )

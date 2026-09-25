@@ -80,6 +80,8 @@ ms_per_beat = 60000 / (tempo_bpm × speed)
 | | `countdown_ms` | 「开始」后的倒计时 |
 | | `retrigger_long_notes` | 布尔；是否对超长音分段重触发 |
 | | `sustain_limit_ms` | 单次按住可维持可闻的最长时间；`null` = 尚未实测 |
+| | `retrigger_gap_ms` | 长音重触发时「松开再按」的间隔；应 ≤ `note_gap_ms`（越短，接缝越不明显） |
+| | `pause_when_unfocused` | 焦点守卫：演奏期间前台窗口不再是目标窗口时，立即停止并释放所有按键（§6.5） |
 | `hotkeys` | `toggle_play` / `pause_resume` / `panic_release` | 组合键字符串，语法 `Mod+...+Key`，`Mod ∈ {Ctrl, Alt, Shift, Win}` |
 | `midi` | `reference_note` | MIDI 音高基准（默认 60 = 中音 C） |
 | | `reference_semitone` | 上述 MIDI 音高对应的 `s`（默认 0） |
@@ -313,7 +315,7 @@ ms_per_beat = 60000 / (tempo_bpm × speed)
    `hold_ms > sustain_limit_ms`：
 
    ```text
-   gap = note_gap_ms
+   gap = retrigger_gap_ms          # 比 note_gap_ms 更短，接缝更不显眼
    段数 n    = ceil((hold_ms + gap) / (sustain_limit_ms + gap))
    每段时长  = (hold_ms − (n−1) × gap) / n      # 毫秒取整，余数并入最后一段
    ```
@@ -364,6 +366,12 @@ idle → countdown → playing ⇄ paused → stopped → idle
 - **急停**：`panic()` 只设置 `threading.Event`；Player 线程在等待循环中**每 ≤ 5 ms** 检查一次，
   立即释放所有按下的键并回到 `idle`。目标：从调用到释放 ≤ 100 ms。
 
+**【规范性】暂停语义**：`pause()` = **静音**，不只是冻住时钟。
+Player 线程在进入暂停等待前，先松开当前按住的**发声键**（鼠标修饰键保持按住，避免恢复时音高先于修饰键生效）；
+`resume()` 时按剩余时值重新按下这些键。若不这样做，暂停在音符中间会让游戏里的键一直按着，
+表现为「变成长按」——这是 2026-09-25 用户实测反馈的问题。
+代价是恢复瞬间会有一次重新起音（暂停是用户显式操作，可以接受）。
+
 ### 6.3 时序推进
 
 - 以 `time.perf_counter()` 建立绝对基准；每个事件睡到 `base + t_ms/1000`。
@@ -374,6 +382,20 @@ idle → countdown → playing ⇄ paused → stopped → idle
 
 任何退出路径（正常结束、stop、panic、异常、进程退出）都必须释放所有按下的键与鼠标键；
 以 `try/finally` + `atexit` 双重保证，并由测试覆盖（用假 Sender 记录动作）。
+
+### 6.5 焦点守卫（安全底线）【规范性】
+
+在游戏内演奏时用户点不到本程序界面；若中途 Alt+Tab 或按 Win 键离开游戏，
+继续注入就会把 `z x c v b n m ,` 与鼠标键打进**别的程序**（聊天窗口、编辑器……），
+既造成误操作，也可能在游戏外留下按住的键。因此当 `pause_when_unfocused` 为真时：
+
+1. **开始播放前**（倒计时结束、发出第一个事件之前）记录当前前台窗口作为**目标窗口**；
+   若此时前台仍属于本程序自身，**拒绝开始**并提示「请先切换到游戏窗口再开始」。
+2. **播放期间**每 ≤ 50 ms 复查前台窗口；一旦不再是目标窗口 →
+   立即释放全部按键、停止演奏，状态置为 `unfocused`，界面给出原因。
+3. 取不到窗口信息时按「不拦截」处理，避免误伤正常演奏。
+
+状态机因此增加一个终止态 `unfocused`（见 §6.1），与其他终止态一样保证「不留按下的键」。
 
 ---
 

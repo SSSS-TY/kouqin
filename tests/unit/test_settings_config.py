@@ -38,10 +38,12 @@ def test_playback_values_are_within_measured_bounds(config) -> None:
     playback = config["playback"]
     assert playback["min_hold_ms"] >= 20          # P0-3：20 ms 即可听见
     assert playback["note_gap_ms"] >= 0
+    assert 0 <= playback["retrigger_gap_ms"] <= playback["note_gap_ms"]   # 重触发接缝要更短
     assert playback["modifier_lead_ms"] >= 0
     assert playback["modifier_tail_ms"] >= 0
     assert playback["countdown_ms"] >= 0
     assert isinstance(playback["retrigger_long_notes"], bool)
+    assert isinstance(playback["pause_when_unfocused"], bool)
 
 
 def test_sustain_limit_is_measured_and_documented(config) -> None:
@@ -50,6 +52,7 @@ def test_sustain_limit_is_measured_and_documented(config) -> None:
     assert isinstance(limit, int) and limit > 0
     note = config["notes"]["sustain_limit_ms"]
     assert "P0-7" in note and "10 秒" in note
+    assert limit <= 10_000, "重触发间隔必须留出余量，不能贴着衰减点"
 
 
 def test_every_setting_is_explained(config) -> None:

@@ -28,8 +28,10 @@ PINNED_PLAYBACK: dict[str, object] = {
     "modifier_lead_ms": 10,
     "modifier_tail_ms": 10,
     "countdown_ms": 3000,
-    "retrigger_long_notes": True,
-    "sustain_limit_ms": 6000,
+    "retrigger_long_notes": False,
+    "sustain_limit_ms": 8000,
+    "retrigger_gap_ms": 12,
+    "pause_when_unfocused": True,
 }
 
 PINNED_MIDI: dict[str, object] = {"reference_note": 60, "reference_semitone": 0}

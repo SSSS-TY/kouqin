@@ -13,7 +13,7 @@ from kouqin.core.compile import PlanError, compile_plan
 from kouqin.core.instrument import load_instrument, reachable
 from kouqin.core.score import ScoreError
 from kouqin.hotkey.win32 import HotkeyManager
-from kouqin.input.win32 import InputSender, is_elevated
+from kouqin.input.win32 import FocusGuard, InputSender, is_elevated
 from kouqin.player.engine import Player
 from kouqin.scores.kq import parse_kq, render_kq
 from kouqin.scores.library import count_unreachable, list_scores, load_score, save_score
@@ -73,6 +73,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.settings_path = self.config_dir / "settings.json"
 
         self.sender = InputSender()
+        self.focus_guard = FocusGuard()
         self.hotkey_manager = HotkeyManager()
         self.event_filter = NativeEventFilter(self.hotkey_manager)
         QtWidgets.QApplication.instance().installNativeEventFilter(self.event_filter)
@@ -363,11 +364,13 @@ class MainWindow(QtWidgets.QMainWindow):
             self.statusBar().showMessage("提示：若游戏以管理员运行，本程序也需以管理员运行才能注入", 8000)
 
         settings = self.settings
+        guard = self.focus_guard if settings.playback.get("pause_when_unfocused", True) else None
         self.player = Player(
             self.plan,
             sender=self.sender,
             loop=self.loop_check.isChecked(),
             countdown_ms=settings.playback["countdown_ms"],
+            focus_guard=guard,
             on_progress=lambda index, total: self.bridge.progress.emit(index, total),
             on_state=lambda state: self.bridge.state_changed.emit(state),
         )
@@ -406,10 +409,13 @@ class MainWindow(QtWidgets.QMainWindow):
             "countdown": "倒计时中（切回游戏）",
             "playing": "播放中",
             "paused": "已暂停",
+            "unfocused": "已停止（焦点离开游戏窗口）",
             "stopped": "已完成",
             "error": "注入失败",
         }
         self.status_label.setText(labels.get(state, state))
+        if state == "unfocused" and self.player is not None and self.player.last_message:
+            self.statusBar().showMessage(self.player.last_message, 10000)
         if state in {"idle", "stopped", "error"}:
             self._set_playing_ui(False)
             if state == "error" and self.player is not None and self.player.last_error:
@@ -423,7 +429,9 @@ class MainWindow(QtWidgets.QMainWindow):
     # ── 设置与校准 ──
 
     def open_settings(self) -> None:
-        dialog = SettingsDialog(self.instrument_path, self.settings_path, self)
+        dialog = SettingsDialog(
+            self.instrument_path, self.settings_path, self, hotkey_manager=self.hotkey_manager
+        )
         if dialog.exec() == QtWidgets.QDialog.DialogCode.Accepted:
             self.refresh_library()
             self._reparse()

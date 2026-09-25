@@ -83,7 +83,9 @@ def test_r02_random_sustain_split_stays_within_limit(seed: int, tmp_path: Path) 
     rng = random.Random(seed)
     instrument = load_instrument(write_instrument(tmp_path, shipped_instrument()))
     limit = rng.choice([500, 800, 1200, 2000, 3000])
-    settings = load_settings(write_settings(tmp_path, playback={"sustain_limit_ms": limit}))
+    settings = load_settings(
+        write_settings(tmp_path, playback={"sustain_limit_ms": limit, "retrigger_long_notes": True})
+    )
 
     for _ in range(20):
         plan = compile_plan(random_score(rng), instrument, settings)
@@ -111,4 +113,3 @@ def test_r04_random_scores_survive_text_round_trip(tmp_path: Path) -> None:
         assert [(n.pitch, n.duration_beat) for n in reparsed.notes] == [
             (n.pitch, n.duration_beat) for n in score.notes
         ]
-

@@ -22,11 +22,18 @@ def _spin(value: int, minimum: int = 0, maximum: int = 60000, suffix: str = " ms
 class SettingsDialog(QtWidgets.QDialog):
     """播放参数、全局热键、键位表。保存后写回 config/ 下的两个 JSON。"""
 
-    def __init__(self, instrument_path: str | Path, settings_path: str | Path, parent=None) -> None:
+    def __init__(
+        self,
+        instrument_path: str | Path,
+        settings_path: str | Path,
+        parent=None,
+        hotkey_manager=None,
+    ) -> None:
         super().__init__(parent)
         self.setWindowTitle("设置")
         self.instrument_path = Path(instrument_path)
         self.settings_path = Path(settings_path)
+        self.hotkey_manager = hotkey_manager
         self.settings = load_settings(self.settings_path)
         self.instrument_data = json.loads(self.instrument_path.read_text(encoding="utf-8"))
 
@@ -62,6 +69,7 @@ class SettingsDialog(QtWidgets.QDialog):
         else:
             self.sustain_enabled.setChecked(True)
         self.sustain_enabled.toggled.connect(self.sustain.setEnabled)
+        self.retrigger_gap = _spin(playback.get("retrigger_gap_ms", 12), maximum=1000)
 
         form = QtWidgets.QFormLayout()
         form.addRow("最短按时长", self.min_hold)
@@ -71,6 +79,7 @@ class SettingsDialog(QtWidgets.QDialog):
         form.addRow("开始前倒计时", self.countdown)
         form.addRow(self.retrigger)
         form.addRow(self.sustain_enabled, self.sustain)
+        form.addRow("长音重触发的间隔", self.retrigger_gap)
         hint = QtWidgets.QLabel(
             "长音上限未实测时保持关闭——此时编译器如实按住整个时值，不做切分。\n"
             "用 `python tools\\p0_sendinput_demo.py sustain` 测得数值后再填入。"
@@ -119,12 +128,16 @@ class SettingsDialog(QtWidgets.QDialog):
 
     def _probe_hotkey(self, key: str) -> None:
         """试注册一次，当场告诉用户这个组合键能不能用。"""
-        from kouqin.hotkey.win32 import HotkeyError, probe
+        from kouqin.hotkey.win32 import HotkeyError, probe_combo
 
         combo = self.hotkey_edits[key].text().strip()
         label = self.hotkey_checks[key]
         try:
-            available, reason = probe(int(self.winId()), combo)
+            if self.hotkey_manager is not None:
+                # 先临时注销本程序的热键再探测，否则会「自己占用自己」而误报
+                available, reason = self.hotkey_manager.probe(combo)
+            else:
+                available, reason = probe_combo(int(self.winId()), combo)
         except HotkeyError as exc:
             label.setText(f"✗ {exc}")
             return
@@ -155,6 +168,8 @@ class SettingsDialog(QtWidgets.QDialog):
             "countdown_ms": self.countdown.value(),
             "retrigger_long_notes": self.retrigger.isChecked(),
             "sustain_limit_ms": self.sustain.value() if self.sustain_enabled.isChecked() else None,
+            "retrigger_gap_ms": self.retrigger_gap.value(),
+            "pause_when_unfocused": self.settings.playback.get("pause_when_unfocused", True),
         }
         settings = self.settings.__class__(
             playback=playback,

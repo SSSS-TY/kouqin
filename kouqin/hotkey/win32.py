@@ -111,8 +111,27 @@ class HotkeyManager:
         registration.callback()
         return True
 
+    def probe(self, combo: str) -> tuple[bool, str]:
+        """检测组合键是否**被别的程序**占用。
 
-def probe(hwnd: int, combo: str) -> tuple[bool, str]:
+        关键点：本程序启动时已经注册了这几个热键，直接试注册会因为「自己占用自己」而误报 1409，
+        所以先临时全部注销，检测完再把原来的注册原样恢复（id 与回调都不变）。
+        """
+        saved = list(self._registrations.values())
+        self.unregister_all()
+        try:
+            available, reason = probe_combo(self._hwnd or 0, combo)
+        finally:
+            for registration in saved:
+                modifiers, vk = parse_combo(registration.combo)
+                if _user32.RegisterHotKey(
+                    wintypes.HWND(registration.hwnd), registration.hotkey_id, modifiers, vk
+                ):
+                    self._registrations[registration.hotkey_id] = registration
+        return available, reason
+
+
+def probe_combo(hwnd: int, combo: str) -> tuple[bool, str]:
     """试注册一次并立刻注销，返回 `(是否可用, 说明)`。
 
     占用时 Windows 返回 1409（热键已注册）；返回值带上原因，界面才能区分
@@ -132,3 +151,9 @@ def probe(hwnd: int, combo: str) -> tuple[bool, str]:
         _user32.UnregisterHotKey(wintypes.HWND(None), hotkey_id)
         return True, "可用"
     return False, f"无法注册（{ctypes.FormatError(code).strip() or code}）"
+
+
+def probe(hwnd: int, combo: str) -> tuple[bool, str]:
+    """兼容别名，等价于 `probe_combo`。"""
+    return probe_combo(hwnd, combo)
+

@@ -47,3 +47,18 @@ def test_default_hotkeys_avoid_instrument_keys() -> None:
         main_key = combo.split("+")[-1].strip().lower()
         assert main_key not in instrument_keys, combo
 
+
+def test_manager_probe_temporarily_releases_own_registrations(monkeypatch) -> None:
+    """占用的判定必须排除「本程序自己注册的键」，否则会把可用的键误报为被占用。"""
+    from kouqin.hotkey.win32 import HotkeyManager
+
+    manager = HotkeyManager()
+    seen: list[str] = []
+    monkeypatch.setattr(
+        "kouqin.hotkey.win32.probe_combo",
+        lambda hwnd, combo: (seen.append(combo) is None, "可用"),
+    )
+
+    assert manager.probe("Ctrl+Alt+P") == (True, "可用")
+    assert seen == ["Ctrl+Alt+P"]
+    assert manager.registered == []
